@@ -1,0 +1,107 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id             String        @id @default(uuid())
+  email          String        @unique
+  name           String
+  avatar         String?
+  googleId       String        @unique
+  role           String        // "partner_1" or "partner_2"
+  createdAt      DateTime      @default(now())
+  
+  // Relations
+  memories       Memory[]
+  wishlist       WishlistItem[] @relation("UserWishlist")
+  boughtGifts    WishlistItem[] @relation("BoughtGifts")
+  assignedTasks  ChecklistItem[]
+}
+
+model Memory {
+  id          String        @id @default(uuid())
+  title       String
+  description String?
+  date        DateTime
+  imageUrl    String?       // AWS S3 URL (legacy fallback)
+  images      MemoryImage[]
+  authorId    String
+  author      User          @relation(fields: [authorId], references: [id])
+  createdAt   DateTime      @default(now())
+}
+
+model MemoryImage {
+  id        String   @id @default(uuid())
+  memoryId  String
+  memory    Memory   @relation(fields: [memoryId], references: [id], onDelete: Cascade)
+  url       String   // AWS S3 URL or local path
+  createdAt DateTime @default(now())
+}
+
+model Preference {
+  id          String   @id @default(uuid())
+  userId      String
+  category    String   // e.g. "Food", "Hobbies", "Sizes", "Colors"
+  item        String   // e.g. "Favorite Pizza"
+  value       String   // e.g. "Pepperoni with extra cheese"
+  createdAt   DateTime @default(now())
+}
+
+model Event {
+  id          String          @id @default(uuid())
+  title       String
+  date        DateTime
+  description String?
+  checklist   ChecklistItem[]
+  createdAt   DateTime        @default(now())
+}
+
+model ChecklistItem {
+  id          String   @id @default(uuid())
+  eventId     String
+  event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  itemText    String
+  isCompleted Boolean  @default(false)
+  assignedTo  String?
+  user        User?    @relation(fields: [assignedTo], references: [id])
+}
+
+model WishlistItem {
+  id          String          @id @default(uuid())
+  title       String
+  description String?
+  price       Float?
+  currency    String          @default("USD")
+  priority    Int             @default(5)
+  url         String?         // Shopping link
+  imageUrl    String?         // Legacy single URL fallback
+  images      WishlistImage[]
+  ownerId     String          // Who wants this gift
+  owner       User            @relation("UserWishlist", fields: [ownerId], references: [id])
+  boughtById  String?         // Who is buying it
+  boughtBy    User?           @relation("BoughtGifts", fields: [boughtById], references: [id])
+  isPurchased Boolean         @default(false)
+  createdAt   DateTime        @default(now())
+}
+
+model WishlistImage {
+  id         String       @id @default(uuid())
+  wishitemId String
+  wishitem   WishlistItem @relation(fields: [wishitemId], references: [id], onDelete: Cascade)
+  url        String       // S3 URL or local path
+  createdAt  DateTime     @default(now())
+}
+
+model CoupleSettings {
+  id        String   @id @default(uuid())
+  startDate DateTime @default(now())
+  pictures  String[] @default([]) // List of local paths or S3 URLs
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+

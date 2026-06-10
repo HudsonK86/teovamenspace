@@ -1,0 +1,589 @@
+/* Layout and Grid Components */
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.main-content {
+  flex: 1;
+  padding: 40px 20px;
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  animation: fadeIn 0.5s ease-out;
+}
+
+/* Form Styles */
+.form-group {
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.form-input, .form-textarea, .form-select {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: var(--border-radius-sm);
+  border: 1px solid var(--border-light);
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: var(--glass-blur);
+  color: var(--text-main);
+  outline: none;
+  font-size: 1rem;
+  transition: var(--transition-smooth);
+}
+
+[data-theme="dark"] .form-input, 
+[data-theme="dark"] .form-textarea, 
+[data-theme="dark"] .form-select {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.form-input:focus, .form-textarea:focus, .form-select:focus {
+  border-color: var(--primary);
+  background: rgba(255, 255, 255, 0.75);
+  box-shadow: 0 0 0 3px rgba(253, 114, 150, 0.15);
+}
+
+[data-theme="dark"] .form-input:focus, 
+[data-theme="dark"] .form-textarea:focus, 
+[data-theme="dark"] .form-select:focus {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+/* Dashboard Styles */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 32px;
+}
+
+@media (max-width: 900px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.welcome-widget {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(135deg, rgba(253, 114, 150, 0.15) 0%, rgba(176, 136, 255, 0.15) 100%);
+  border: 1px solid var(--border-card);
+  position: relative;
+  overflow: hidden;
+}
+
+.countdown-container {
+  display: flex;
+  gap: 16px;
+  margin-top: 15px;
+}
+
+.countdown-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.6);
+  padding: 12px 18px;
+  border-radius: var(--border-radius-sm);
+  min-width: 70px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+}
+
+[data-theme="dark"] .countdown-card {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.countdown-number {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--primary);
+  line-height: 1;
+}
+
+.countdown-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+/* Preferences / Likes screen */
+.pref-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+}
+
+@media (max-width: 768px) {
+  .pref-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+.partner-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-card);
+  border-radius: var(--border-radius-lg);
+  padding: 32px;
+  box-shadow: var(--card-shadow);
+  height: fit-content;
+}
+
+.partner-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.partner-avatar {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  border: 3px solid var(--primary);
+  object-fit: cover;
+  box-shadow: 0 4px 12px rgba(253, 114, 150, 0.2);
+}
+
+.pref-category-section {
+  margin-bottom: 24px;
+}
+
+.pref-category-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: var(--secondary);
+  border-bottom: 1.5px solid var(--border-light);
+  padding-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.pref-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--border-light);
+}
+
+.pref-item-name {
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.pref-item-value {
+  font-weight: 500;
+}
+
+/* Memories Journal */
+.timeline {
+  position: relative;
+  max-width: 800px;
+  margin: 40px auto;
+  padding-left: 32px;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 15px;
+  width: 2px;
+  background: linear-gradient(to bottom, var(--primary) 0%, var(--secondary) 100%);
+  border-radius: 1px;
+}
+
+.timeline-item {
+  position: relative;
+  margin-bottom: 40px;
+  animation: fadeIn 0.5s ease-out;
+}
+
+.timeline-dot {
+  position: absolute;
+  left: -24px;
+  top: 6px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: white;
+  border: 4px solid var(--primary);
+  box-shadow: 0 0 0 4px var(--primary-light);
+}
+
+[data-theme="dark"] .timeline-dot {
+  background: #1e1923;
+}
+
+.timeline-date {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 8px;
+}
+
+.memory-card {
+  overflow: hidden;
+  padding: 0;
+}
+
+.memory-img {
+  width: 100%;
+  max-height: 450px;
+  object-fit: contain;
+  background: rgba(0, 0, 0, 0.03);
+  border-bottom: 1px solid var(--border-card);
+}
+
+[data-theme="dark"] .memory-img {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.memory-body {
+  padding: 24px;
+}
+
+/* Checklist and Events */
+.checklist-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 15px;
+}
+
+.checklist-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: var(--border-radius-sm);
+  border: 1px solid var(--border-light);
+  transition: var(--transition-smooth);
+}
+
+[data-theme="dark"] .checklist-item {
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.checklist-item:hover {
+  transform: translateX(4px);
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.checklist-checkbox {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  border: 2px solid var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-bounce);
+}
+
+.checklist-checkbox.checked {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: white;
+}
+
+.checklist-text {
+  flex: 1;
+  font-size: 0.95rem;
+  transition: var(--transition-smooth);
+}
+
+.checklist-text.completed {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+/* Wishlist styles */
+.wishlist-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 24px;
+  margin-top: 24px;
+}
+
+.wish-card {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+.wish-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 6px 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 50px;
+  backdrop-filter: blur(8px);
+  z-index: 5;
+}
+
+.wish-badge.wished {
+  background: rgba(253, 114, 150, 0.2);
+  color: var(--primary);
+  border: 1px solid rgba(253, 114, 150, 0.3);
+}
+
+.wish-badge.purchased {
+  background: rgba(46, 204, 113, 0.2);
+  color: var(--success);
+  border: 1px solid rgba(46, 204, 113, 0.3);
+}
+
+.wish-img-container {
+  width: 100%;
+  height: 200px;
+  background: rgba(0,0,0,0.02);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-bottom: 1px solid var(--border-card);
+}
+
+.wish-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.wish-fallback-img {
+  color: var(--text-muted);
+  opacity: 0.3;
+}
+
+.wish-details {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.wish-price {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--primary);
+  margin-bottom: 8px;
+}
+
+.wish-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 15px;
+}
+
+/* Modal Overlay Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.25s ease-out;
+}
+
+.modal-content {
+  width: 100%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+/* Memories Multiple Images Carousel & Preview Grid Styles */
+.carousel-container {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+}
+
+.carousel-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.75);
+  color: var(--text-main);
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  z-index: 2;
+  transition: all 0.2s ease;
+  line-height: 0;
+}
+
+.carousel-arrow:hover {
+  background: white;
+  transform: translateY(-50%) scale(1.08);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.2);
+}
+
+.carousel-arrow.left {
+  left: 16px;
+}
+
+.carousel-arrow.right {
+  right: 16px;
+}
+
+.carousel-dots {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+  z-index: 2;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 6px 12px;
+  border-radius: 20px;
+  backdrop-filter: blur(8px);
+}
+
+.carousel-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.previews-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  width: 100%;
+  justify-content: center;
+  padding: 10px;
+}
+
+.thumbnail-container {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1.5px solid var(--border-light);
+}
+
+.thumbnail-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.remove-thumbnail-btn {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  background: rgba(253, 114, 150, 0.95);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: all 0.15s ease;
+  line-height: 0;
+  padding: 0;
+}
+
+.remove-thumbnail-btn:hover {
+  transform: scale(1.1);
+  background: #fc4a7d;
+}
+
+.add-more-thumbnail {
+  width: 80px;
+  height: 80px;
+  border-radius: 12px;
+  border: 1.5px dashed var(--border-light);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-muted);
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  transition: all 0.2s ease;
+}
+
+.add-more-thumbnail:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: rgba(255, 255, 255, 0.4);
+}
+
+/* Memory Action Buttons hover effects */
+.memory-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.memory-action-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: color 0.2s, transform 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+}
+
+.memory-action-btn:hover {
+  transform: scale(1.15);
+}
+
+.memory-action-btn.edit-btn:hover {
+  color: var(--primary) !important;
+}
+
+.memory-action-btn.delete-btn:hover {
+  color: var(--danger) !important;
+}
+
