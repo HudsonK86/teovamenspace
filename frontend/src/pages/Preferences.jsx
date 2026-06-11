@@ -440,7 +440,7 @@ export default function Preferences({ user, setUser, partners, setPartners, pref
               style={{ borderColor: 'var(--secondary)' }}
             />
             <div>
-              <h3 style={{ fontSize: '1.4rem' }}>{partner?.name || 'Waiting for Girlfriend...'}</h3>
+              <h3 style={{ fontSize: '1.4rem' }}>{partner?.name || "Girlfriend's Preferences"}</h3>
               <span style={{ fontSize: '0.8rem', fontWeight: '700', color: 'var(--secondary)', textTransform: 'uppercase' }}>Partner Profile</span>
             </div>
           </div>

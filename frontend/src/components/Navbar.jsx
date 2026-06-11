@@ -84,7 +84,7 @@ export default function Navbar({ activePage, setActivePage, user, partners, logo
                 title={partner.name}
               />
             ) : (
-              <div className="nav-avatar-placeholder" title="Waiting for partner...">?</div>
+              <div className="nav-avatar-placeholder" title={partner?.name || 'Partner'}>{partner?.name ? partner.name[0].toLowerCase() : 'p'}</div>
             )}
           </div>
 

@@ -19,7 +19,9 @@ const upload = multer({
   fileFilter: (req, file, cb) => {
     const filetypes = /jpeg|jpg|png|webp|gif/;
     const mimetype = filetypes.test(file.mimetype);
-    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+    const extname = filetypes.test(
+      path.extname(file.originalname).toLowerCase(),
+    );
     if (mimetype && extname) {
       return cb(null, true);
     }
@@ -27,9 +29,9 @@ const upload = multer({
   },
 });
 
-const s3Configured = 
-  process.env.AWS_ACCESS_KEY_ID && 
-  process.env.AWS_SECRET_ACCESS_KEY && 
+const s3Configured =
+  process.env.AWS_ACCESS_KEY_ID &&
+  process.env.AWS_SECRET_ACCESS_KEY &&
   process.env.AWS_S3_BUCKET_NAME &&
   !process.env.AWS_ACCESS_KEY_ID.startsWith('YOUR_');
 
@@ -78,7 +80,9 @@ async function handleAvatarUpload(file) {
 }
 // JWT_SECRET is validated at startup by middleware/auth.js — reuse the same var here
 if (!process.env.JWT_SECRET) {
-  throw new Error('FATAL: JWT_SECRET environment variable is not set. Refusing to start.');
+  throw new Error(
+    'FATAL: JWT_SECRET environment variable is not set. Refusing to start.',
+  );
 }
 const JWT_SECRET = process.env.JWT_SECRET;
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
@@ -88,9 +92,20 @@ const client = new OAuth2Client(GOOGLE_CLIENT_ID);
 // Helper to generate JWT
 function generateToken(user) {
   return jwt.sign(
-    { id: user.id, email: user.email, name: user.name, role: user.role, avatar: user.avatar },
+    {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      avatar: user.avatar,
+    },
     JWT_SECRET,
-    { expiresIn: '7d' }
+    {
+      algorithm: 'HS256', // Explicit algorithm to prevent algorithm confusion attacks
+      expiresIn: '7d',
+      issuer: 'kuteovapemen',
+      audience: 'kuteovapemen-app',
+    },
   );
 }
 
@@ -99,31 +114,22 @@ async function getOrAssignRole(email) {
   // 1. Strict whitelist check if ALLOWED_EMAILS environment variable is set
   const allowedEmailsStr = process.env.ALLOWED_EMAILS;
   if (allowedEmailsStr) {
-    const allowed = allowedEmailsStr.split(',').map(e => e.trim().toLowerCase());
+    const allowed = allowedEmailsStr
+      .split(',')
+      .map((e) => e.trim().toLowerCase());
     if (!allowed.includes(email.toLowerCase())) {
-      throw new Error('Access denied: This email is not authorized for this private space.');
+      throw new Error(
+        'Access denied: This email is not authorized for this private space.',
+      );
     }
   }
 
-  // 2. Strict limit of maximum 2 users
-  const usersCount = await prisma.user.count();
-  if (usersCount === 0) {
-    return 'partner_1';
-  } else if (usersCount === 1) {
-    // Check if user already exists
-    const existingUser = await prisma.user.findFirst();
-    if (existingUser.email === email) {
-      return existingUser.role;
-    }
-    return 'partner_2';
-  } else {
-    // Check if the user is already one of the two registered partners
-    const existing = await prisma.user.findUnique({ where: { email } });
-    if (existing) {
-      return existing.role;
-    }
-    throw new Error('Access denied: This is a private app capped at two partners.');
+  // 2. Assign role based on email
+  const hudsonEmail = process.env.HUDSON_EMAIL || 'hudsonnguyen86@gmail.com';
+  if (email.toLowerCase() === hudsonEmail.toLowerCase()) {
+    return 'bf';
   }
+  return 'gf';
 }
 
 // Google Login Route
@@ -136,11 +142,15 @@ router.post('/google', async (req, res) => {
 
   try {
     let payload;
-    
+
     // In local development, if client id is not configured, we allow mock parsing or error gracefully
-    if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID.startsWith('YOUR_GOOGLE_CLIENT_ID')) {
-      return res.status(400).json({ 
-        error: 'Google Client ID is not configured on the backend. Please use Mock Login for testing.' 
+    if (
+      !GOOGLE_CLIENT_ID ||
+      GOOGLE_CLIENT_ID.startsWith('YOUR_GOOGLE_CLIENT_ID')
+    ) {
+      return res.status(400).json({
+        error:
+          'Google Client ID is not configured on the backend. Please use Mock Login for testing.',
       });
     }
 
@@ -162,11 +172,13 @@ router.post('/google', async (req, res) => {
     let user = await prisma.user.findUnique({ where: { googleId } });
     if (!user) {
       // Fallback check by email to handle transitioning from mock login to Google login
-      const existingUserByEmail = await prisma.user.findUnique({ where: { email } });
+      const existingUserByEmail = await prisma.user.findUnique({
+        where: { email },
+      });
       if (existingUserByEmail) {
         user = await prisma.user.update({
           where: { id: existingUserByEmail.id },
-          data: { googleId, name, avatar: picture }
+          data: { googleId, name, avatar: picture },
         });
       } else {
         user = await prisma.user.create({
@@ -180,10 +192,14 @@ router.post('/google', async (req, res) => {
         });
       }
     } else {
-      // Update avatar/name if changed
+      // Update name if changed, but preserve custom avatar if user uploaded one
+      const updateData = { name };
+      if (!user.avatar || user.avatar.startsWith('https://api.dicebear.com')) {
+        updateData.avatar = picture;
+      }
       user = await prisma.user.update({
         where: { id: user.id },
-        data: { name, avatar: picture },
+        data: updateData,
       });
     }
 
@@ -205,15 +221,21 @@ router.post('/mock', async (req, res) => {
   const { email, name, role } = req.body; // e.g. "partner_1" or "partner_2"
 
   if (!email || !name || !role) {
-    return res.status(400).json({ error: 'email, name, and role are required' });
+    return res
+      .status(400)
+      .json({ error: 'email, name, and role are required' });
   }
 
   try {
     const allowedEmailsStr = process.env.ALLOWED_EMAILS;
     if (allowedEmailsStr) {
-      const allowed = allowedEmailsStr.split(',').map(e => e.trim().toLowerCase());
+      const allowed = allowedEmailsStr
+        .split(',')
+        .map((e) => e.trim().toLowerCase());
       if (!allowed.includes(email.toLowerCase())) {
-        return res.status(403).json({ error: 'Access denied: This email is not authorized.' });
+        return res
+          .status(403)
+          .json({ error: 'Access denied: This email is not authorized.' });
       }
     }
 
@@ -224,8 +246,10 @@ router.post('/mock', async (req, res) => {
     if (!user) {
       // Double check the database user limit (max 2)
       const count = await prisma.user.count();
-      if (count >= 2 && !await prisma.user.findUnique({ where: { email } })) {
-        return res.status(403).json({ error: 'Private space is full! (Max 2 users)' });
+      if (count >= 2 && !(await prisma.user.findUnique({ where: { email } }))) {
+        return res
+          .status(403)
+          .json({ error: 'Private space is full! (Max 2 users)' });
       }
 
       user = await prisma.user.create({
@@ -270,7 +294,7 @@ router.get('/me', async (req, res) => {
 router.get('/partners', authenticateToken, async (req, res) => {
   try {
     const partners = await prisma.user.findMany({
-      orderBy: { role: 'asc' }
+      orderBy: { role: 'asc' },
     });
     res.json(partners);
   } catch (err) {
@@ -279,26 +303,31 @@ router.get('/partners', authenticateToken, async (req, res) => {
 });
 
 // POST /api/auth/avatar (Update current user avatar)
-router.post('/avatar', authenticateToken, upload.single('avatar'), async (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: 'No image file uploaded' });
-  }
+router.post(
+  '/avatar',
+  authenticateToken,
+  upload.single('avatar'),
+  async (req, res) => {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No image file uploaded' });
+    }
 
-  try {
-    const avatarUrl = await handleAvatarUpload(req.file);
+    try {
+      const avatarUrl = await handleAvatarUpload(req.file);
 
-    // Update user in DB
-    const updatedUser = await prisma.user.update({
-      where: { id: req.user.id },
-      data: { avatar: avatarUrl }
-    });
+      // Update user in DB
+      const updatedUser = await prisma.user.update({
+        where: { id: req.user.id },
+        data: { avatar: avatarUrl },
+      });
 
-    res.json(updatedUser);
-  } catch (error) {
-    console.error('Error updating avatar:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
+      res.json(updatedUser);
+    } catch (error) {
+      console.error('Error updating avatar:', error);
+      res.status(500).json({ error: error.message });
+    }
+  },
+);
 
 // PATCH /api/auth/profile (Update current user profile name)
 router.patch('/profile', authenticateToken, async (req, res) => {
@@ -311,7 +340,7 @@ router.patch('/profile', authenticateToken, async (req, res) => {
   try {
     const updatedUser = await prisma.user.update({
       where: { id: req.user.id },
-      data: { name: name.trim() }
+      data: { name: name.trim() },
     });
 
     res.json(updatedUser);

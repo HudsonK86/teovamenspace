@@ -4,10 +4,6 @@ import { API_BASE_URL } from '../config.js';
 
 export default function Login({ onLoginSuccess }) {
   const [error, setError] = useState('');
-  const [showMockForm, setShowMockForm] = useState(false);
-  const [mockEmail, setMockEmail] = useState('');
-  const [mockName, setMockName] = useState('');
-  const [mockRole, setMockRole] = useState('partner_1');
   const [loading, setLoading] = useState(false);
 
   // Handle Google Credential Response
@@ -36,10 +32,12 @@ export default function Login({ onLoginSuccess }) {
 
   // Render official Google Sign-in button on mount
   useEffect(() => {
+    const isMobile = window.innerWidth < 640;
+    
     const initializeGoogleSignIn = () => {
       if (window.google) {
         window.google.accounts.id.initialize({
-          client_id: '734013142510-v0tum9l3knsappjptaf83mqmsb6renr7.apps.googleusercontent.com',
+          client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
           callback: handleGoogleCredentialResponse,
         });
         
@@ -47,7 +45,7 @@ export default function Login({ onLoginSuccess }) {
         if (btnContainer) {
           window.google.accounts.id.renderButton(
             btnContainer,
-            { theme: 'outline', size: 'large', width: '396' }
+            { theme: 'outline', size: isMobile ? 'medium' : 'large', width: isMobile ? 280 : 396 }
           );
         }
       }
@@ -66,40 +64,6 @@ export default function Login({ onLoginSuccess }) {
       return () => clearInterval(interval);
     }
   }, []);
-
-  // Handle Mock Login Submission
-  const handleMockSubmit = async (e) => {
-    e.preventDefault();
-    if (!mockEmail || !mockName) {
-      setError('Please fill out all mock fields.');
-      return;
-    }
-
-    setLoading(true);
-    setError('');
-
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/auth/mock`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: mockEmail,
-          name: mockName,
-          role: mockRole,
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Mock login failed');
-
-      localStorage.setItem('token', data.token);
-      onLoginSuccess(data.user, data.token);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <div style={styles.container}>
@@ -125,77 +89,6 @@ export default function Login({ onLoginSuccess }) {
           <div style={styles.googleContainer}>
             <div id="google-signin-btn"></div>
           </div>
-
-          {/* Divider */}
-          <div style={styles.divider}>
-            <span style={styles.dividerLine}></span>
-            <span style={styles.dividerText}>or evaluate locally</span>
-            <span style={styles.dividerLine}></span>
-          </div>
-
-          {/* Toggle Developer Mock Login */}
-          {!showMockForm ? (
-            <button 
-              onClick={() => setShowMockForm(true)} 
-              className="btn-secondary" 
-              style={{ justifyContent: 'center' }}
-            >
-              Use Developer Mock Login
-            </button>
-          ) : (
-            <form onSubmit={handleMockSubmit} style={styles.mockForm} className="animate-fade-in">
-              <div className="form-group">
-                <label>Mock Email</label>
-                <input 
-                  type="email" 
-                  className="form-input" 
-                  placeholder="e.g. teo@love.com" 
-                  value={mockEmail} 
-                  onChange={e => setMockEmail(e.target.value)}
-                  required 
-                />
-              </div>
-
-              <div className="form-group">
-                <label>First Name</label>
-                <input 
-                  type="text" 
-                  className="form-input" 
-                  placeholder="e.g. KuTeo" 
-                  value={mockName} 
-                  onChange={e => setMockName(e.target.value)}
-                  required 
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Partner Identity Role</label>
-                <select 
-                  className="form-select" 
-                  value={mockRole} 
-                  onChange={e => setMockRole(e.target.value)}
-                >
-                  <option value="partner_1">Partner A (e.g. KuTeo)</option>
-                  <option value="partner_2">Partner B (e.g. Girlfriend)</option>
-                </select>
-                <p style={styles.formHint}>Note: The application restricts registrations to exactly two accounts to remain private.</p>
-              </div>
-
-              <div style={styles.formButtons}>
-                <button type="submit" className="btn-primary" style={{ flex: 1, justifyContent: 'center' }} disabled={loading}>
-                  {loading ? 'Entering...' : 'Enter Space'}
-                </button>
-                <button 
-                  type="button" 
-                  className="btn-secondary" 
-                  onClick={() => setShowMockForm(false)}
-                  disabled={loading}
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          )}
         </div>
       </div>
     </div>
@@ -265,43 +158,6 @@ const styles = {
     display: 'flex',
     justifyContent: 'center',
     width: '100%',
-  },
-  divider: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    margin: '8px 0',
-  },
-  dividerLine: {
-    flex: 1,
-    height: '1px',
-    background: 'var(--border-light)',
-  },
-  dividerText: {
-    fontSize: '0.8rem',
-    color: 'var(--text-muted)',
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: '0.05em',
-  },
-  mockForm: {
-    textAlign: 'left',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '16px',
-    background: 'rgba(255,255,255,0.25)',
-    padding: '20px',
-    borderRadius: '16px',
-    border: '1px solid var(--border-light)',
-  },
-  formHint: {
-    fontSize: '0.75rem',
-    color: 'var(--text-muted)',
-    marginTop: '4px',
-  },
-  formButtons: {
-    display: 'flex',
-    gap: '12px',
-    marginTop: '8px',
+    minWidth: '240px',
   },
 };

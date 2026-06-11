@@ -9,6 +9,17 @@ import { authenticateToken } from '../middleware/auth.js';
 
 const router = Router();
 
+// Helper: Sanitize and validate file path to prevent path traversal
+function sanitizePath(baseDir, userPath) {
+  const resolvedBase = path.resolve(baseDir);
+  const resolvedPath = path.resolve(baseDir, userPath);
+  
+  if (!resolvedPath.startsWith(resolvedBase)) {
+    throw new Error('Invalid file path: Path traversal detected');
+  }
+  return resolvedPath;
+}
+
 // Ensure uploads folder exists for local fallback
 const UPLOADS_DIR = './uploads';
 if (!fs.existsSync(UPLOADS_DIR)) {
@@ -229,15 +240,15 @@ router.delete('/pictures', authenticateToken, async (req, res) => {
       }
     });
 
-    // Clean up local file if stored locally
+    // Clean up local file if stored locally (with path traversal protection)
     if (url.startsWith('/uploads/')) {
-      const localFilePath = path.join('.', url);
-      if (fs.existsSync(localFilePath)) {
-        try {
+      try {
+        const localFilePath = sanitizePath('.', url);
+        if (fs.existsSync(localFilePath)) {
           fs.unlinkSync(localFilePath);
-        } catch (err) {
-          console.error('Failed to delete local image file:', err);
         }
+      } catch (err) {
+        console.error('Path traversal blocked or file delete failed:', err.message);
       }
     }
 

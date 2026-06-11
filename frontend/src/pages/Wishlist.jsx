@@ -269,7 +269,7 @@ export default function Wishlist({ user, partners, wishlistItems, setWishlistIte
           style={{...styles.tabBtn, ...(activeTab === 'partner' ? styles.activeTabBtn : {}), borderColor: 'var(--secondary)'}}
         >
           <Gift size={18} />
-          <span>{partner ? `${partner.name}'s Wishlist` : "Girlfriend's Wishlist"}</span>
+          <span>{partner ? `${partner.name}'s Wishlist` : "Partner's Wishlist"}</span>
         </button>
         <button 
           onClick={() => setActiveTab('mine')}

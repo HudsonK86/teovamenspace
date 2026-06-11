@@ -264,7 +264,7 @@ export default function Dashboard({ user, partners, memories, events, wishlistIt
           </div>
           <p style={styles.welcomeSubtitle}>
             {partner 
-              ? `${partner.name} and ${user?.name} have been building this space together.` 
+              ? `${user?.name} & ${partner?.name} have been building this space together.` 
               : 'Welcome to your private memory space. Invite your partner to start sharing!'}
           </p>
         </div>

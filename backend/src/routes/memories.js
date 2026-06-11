@@ -9,7 +9,16 @@ import { authenticateToken } from '../middleware/auth.js';
 
 const router = Router();
 
-// Ensure uploads folder exists for local fallback
+// Helper: Sanitize and validate file path to prevent path traversal
+function sanitizePath(baseDir, userPath) {
+  const resolvedBase = path.resolve(baseDir);
+  const resolvedPath = path.resolve(baseDir, userPath);
+  
+  if (!resolvedPath.startsWith(resolvedBase)) {
+    throw new Error('Invalid file path: Path traversal detected');
+  }
+  return resolvedPath;
+}
 const UPLOADS_DIR = './uploads';
 if (!fs.existsSync(UPLOADS_DIR)) {
   fs.mkdirSync(UPLOADS_DIR, { recursive: true });
@@ -148,6 +157,7 @@ router.post('/', authenticateToken, upload.array('images', 10), async (req, res)
 router.put('/:id', authenticateToken, upload.array('images', 10), async (req, res) => {
   const { id } = req.params;
   const { title, description, date } = req.body;
+  const userId = req.user.id;
 
   if (!title || !date) {
     return res.status(400).json({ error: 'title and date are required' });
@@ -161,6 +171,11 @@ router.put('/:id', authenticateToken, upload.array('images', 10), async (req, re
 
     if (!memory) {
       return res.status(404).json({ error: 'Memory not found' });
+    }
+
+    // IDOR protection: verify ownership
+    if (memory.authorId !== userId) {
+      return res.status(403).json({ error: 'Forbidden: You do not own this memory' });
     }
 
     // Parse existingImageIds that the client wants to keep
@@ -191,9 +206,13 @@ router.put('/:id', authenticateToken, upload.array('images', 10), async (req, re
 
         for (const img of imagesToDelete) {
           if (img.url && img.url.startsWith('/uploads/')) {
-            const localFilePath = path.join('.', img.url);
-            if (fs.existsSync(localFilePath)) {
-              fs.unlinkSync(localFilePath);
+            try {
+              const localFilePath = sanitizePath('.', img.url);
+              if (fs.existsSync(localFilePath)) {
+                fs.unlinkSync(localFilePath);
+              }
+            } catch (err) {
+              console.error('Path traversal blocked or file delete failed:', err.message);
             }
           }
         }
@@ -261,6 +280,11 @@ router.delete('/:id', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'Memory not found' });
     }
 
+    // IDOR protection: verify ownership
+    if (memory.authorId !== userId) {
+      return res.status(403).json({ error: 'Forbidden: You do not own this memory' });
+    }
+
     await prisma.memory.delete({
       where: { id },
     });
@@ -273,9 +297,13 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 
     for (const url of allImageUrls) {
       if (url && url.startsWith('/uploads/')) {
-        const localFilePath = path.join('.', url);
-        if (fs.existsSync(localFilePath)) {
-          fs.unlinkSync(localFilePath);
+        try {
+          const localFilePath = sanitizePath('.', url);
+          if (fs.existsSync(localFilePath)) {
+            fs.unlinkSync(localFilePath);
+          }
+        } catch (err) {
+          console.error('Path traversal blocked or file delete failed:', err.message);
         }
       }
     }
