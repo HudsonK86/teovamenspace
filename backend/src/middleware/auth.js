@@ -1,6 +1,10 @@
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'kuteovapemen-secret-dev-key';
+// Crash at startup if JWT_SECRET is not set — never fall back to a weak literal
+if (!process.env.JWT_SECRET) {
+  throw new Error('FATAL: JWT_SECRET environment variable is not set. Refusing to start.');
+}
+const JWT_SECRET = process.env.JWT_SECRET;
 
 export function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];

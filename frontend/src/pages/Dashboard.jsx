@@ -34,6 +34,10 @@ export default function Dashboard({ user, partners, memories, events, wishlistIt
   const [activePhotoIdx, setActivePhotoIdx] = useState(0);
   const [isEditingDate, setIsEditingDate] = useState(false);
   const [editDateValue, setEditDateValue] = useState('');
+  const [isEditingPhotos, setIsEditingPhotos] = useState(false);
+  const [selectedPhotoIndices, setSelectedPhotoIndices] = useState([]);
+  const [draggedPhotoIdx, setDraggedPhotoIdx] = useState(null);
+  const [editedPhotos, setEditedPhotos] = useState([]);
   const fileInputRef = useRef(null);
 
   const partner = partners.find(p => p.id !== user?.id);
@@ -95,23 +99,65 @@ export default function Dashboard({ user, partners, memories, events, wishlistIt
     }
   };
 
-  const handleSaveDate = async () => {
-    // Send debug log to backend
-    fetch(`${API_BASE_URL}/api/debug/log`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: 'info', message: 'handleSaveDate triggered', editDateValue })
-    }).catch(() => {});
+  const handleDeleteSelectedPhotos = async () => {
+    if (selectedPhotoIndices.length === 0) {
+      alert('Select photos to delete');
+      return;
+    }
+    if (!confirm(`Delete ${selectedPhotoIndices.length} photo(s)?`)) return;
 
-    if (!editDateValue) {
-      fetch(`${API_BASE_URL}/api/debug/log`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'warning', message: 'editDateValue is empty' })
-      }).catch(() => {});
+    try {
+      const photosToDelete = selectedPhotoIndices.map(idx => photos[idx]);
+      for (const photoUrl of photosToDelete) {
+        await fetch(`${API_BASE_URL}/api/couple/pictures`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ url: photoUrl })
+        });
+      }
+      const res = await fetch(`${API_BASE_URL}/api/couple`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      setCoupleSettings(data);
+      setSelectedPhotoIndices([]);
+      setActivePhotoIdx(0);
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const handleDragStart = (idx) => {
+    setDraggedPhotoIdx(idx);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (targetIdx) => {
+    if (draggedPhotoIdx === null || draggedPhotoIdx === targetIdx) {
+      setDraggedPhotoIdx(null);
       return;
     }
 
+    const newPhotos = [...photos];
+    const draggedPhoto = newPhotos[draggedPhotoIdx];
+    newPhotos.splice(draggedPhotoIdx, 1);
+    newPhotos.splice(targetIdx, 0, draggedPhoto);
+
+    setCoupleSettings(prev => ({
+      ...prev,
+      pictures: newPhotos
+    }));
+    setDraggedPhotoIdx(null);
+  };
+
+  const handleSaveDate = async () => {
+    if (!editDateValue) return;
     try {
       const res = await fetch(`${API_BASE_URL}/api/couple`, {
         method: 'PUT',
@@ -122,22 +168,10 @@ export default function Dashboard({ user, partners, memories, events, wishlistIt
         body: JSON.stringify({ startDate: editDateValue })
       });
       const data = await res.json();
-      
-      fetch(`${API_BASE_URL}/api/debug/log`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'info', message: 'PUT /api/couple response', status: res.status, data })
-      }).catch(() => {});
-
       if (!res.ok) throw new Error(data.error || 'Failed to update date');
       setCoupleSettings(data);
       setIsEditingDate(false);
     } catch (err) {
-      fetch(`${API_BASE_URL}/api/debug/log`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'error', message: 'handleSaveDate catch block', error: err.message })
-      }).catch(() => {});
       alert(err.message);
     }
   };
@@ -237,6 +271,14 @@ export default function Dashboard({ user, partners, memories, events, wishlistIt
                 <Heart size={20} fill="var(--primary)" color="var(--primary)" className="pulse-heart" />
                 Our Moments
               </h3>
+              <button
+                onClick={() => setIsEditingPhotos(!isEditingPhotos)}
+                style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--primary)', fontSize: '0.9rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}
+                title="Edit photos"
+              >
+                <Edit3 size={16} />
+                Edit
+              </button>
             </div>
 
             {/* Photo Slider */}
@@ -313,34 +355,33 @@ export default function Dashboard({ user, partners, memories, events, wishlistIt
               )}
             </div>
 
-            {/* Combined Love Story & Days Counter Footer */}
             {anniversaryDate && (
               <div className="combined-footer-responsive" style={styles.combinedStoryFooter}>
-                <div style={styles.storyDetailsSide}>
-                  <h4 style={styles.partnerNames}>
+                <div className="story-details-side" style={styles.storyDetailsSide}>
+                  <h4 className="partner-names" style={styles.partnerNames}>
                     {partner ? `${partner.name} & ${user?.name}` : `${user?.name}`}
                   </h4>
                   
                   {isEditingDate ? (
-                    <div style={styles.dateEditorInline}>
+                    <div className="date-editor-inline" style={styles.dateEditorInline}>
                       <input 
                         type="date" 
-                        className="form-input" 
+                        className="form-input date-input-inline" 
                         style={styles.dateInputInline}
                         value={editDateValue} 
                         onChange={e => setEditDateValue(e.target.value)} 
                       />
                       <div style={{ display: 'flex', gap: '4px' }}>
-                        <button className="btn-primary" style={styles.editorBtnInline} onClick={handleSaveDate}>
+                        <button className="btn-primary editor-btn-inline" style={styles.editorBtnInline} onClick={handleSaveDate}>
                           <Save size={12} />
                         </button>
-                        <button className="btn-secondary" style={styles.editorBtnInline} onClick={() => setIsEditingDate(false)}>
+                        <button className="btn-secondary editor-btn-inline" style={styles.editorBtnInline} onClick={() => setIsEditingDate(false)}>
                           <X size={12} />
                         </button>
                       </div>
                     </div>
                   ) : (
-                    <div style={styles.anniversaryRowInline}>
+                    <div className="anniversary-row-inline" style={styles.anniversaryRowInline}>
                       <span>
                         Since {anniversaryDate.toLocaleDateString(undefined, {
                           year: 'numeric',
@@ -351,7 +392,7 @@ export default function Dashboard({ user, partners, memories, events, wishlistIt
                       </span>
                       <button 
                         style={styles.editDateBtnInline}
-                        className="edit-date-btn-hover"
+                        className="edit-date-btn-hover edit-date-btn-inline"
                         onClick={() => {
                           setEditDateValue(coupleSettings?.startDate ? coupleSettings.startDate.split('T')[0] : '');
                           setIsEditingDate(true);
@@ -364,9 +405,9 @@ export default function Dashboard({ user, partners, memories, events, wishlistIt
                   )}
                 </div>
 
-                <div style={styles.storyCounterSide}>
-                  <span style={styles.daysNumCombined}>{daysTogether}</span>
-                  <span style={styles.daysLabelCombined}>Days Together</span>
+                <div className="story-counter-side" style={styles.storyCounterSide}>
+                  <span className="days-num-combined" style={styles.daysNumCombined}>{daysTogether}</span>
+                  <span className="days-label-combined" style={styles.daysLabelCombined}>Days Together</span>
                 </div>
               </div>
             )}
@@ -490,6 +531,101 @@ export default function Dashboard({ user, partners, memories, events, wishlistIt
           </div>
         </div>
       </div>
+
+      {/* Edit Our Moments Modal */}
+      {isEditingPhotos && (
+        <div className="modal-overlay">
+          <div className="glass-panel modal-content" style={{ position: 'relative', maxWidth: '550px' }}>
+            <button
+              onClick={() => setIsEditingPhotos(false)}
+              style={styles.closeBtn}
+            >
+              <X size={20} />
+            </button>
+            <h3 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Heart size={20} fill="var(--primary)" color="var(--primary)" />
+              Edit Our Moments
+            </h3>
+
+            {photos.length > 0 ? (
+              <form style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {/* Photo Thumbnails Grid */}
+                <div style={styles.uploadArea}>
+                  <div className="previews-wrapper" onClick={(e) => e.stopPropagation()}>
+                    {photos.map((photoUrl, idx) => {
+                      const fullUrl = photoUrl.startsWith('/uploads/') ? `${API_BASE_URL}${photoUrl}` : photoUrl;
+                      return (
+                        <div
+                          key={idx}
+                          className="thumbnail-container"
+                          draggable
+                          onDragStart={() => handleDragStart(idx)}
+                          onDragOver={handleDragOver}
+                          onDrop={() => handleDrop(idx)}
+                          style={{ opacity: draggedPhotoIdx === idx ? 0.5 : 1 }}
+                        >
+                          <img src={fullUrl} alt={`Photo ${idx + 1}`} className="thumbnail-image" />
+                          <input
+                            type="checkbox"
+                            checked={selectedPhotoIndices.includes(idx)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedPhotoIndices(prev => [...prev, idx]);
+                              } else {
+                                setSelectedPhotoIndices(prev => prev.filter(i => i !== idx));
+                              }
+                            }}
+                            style={styles.thumbnailCheckbox}
+                            title="Select for deletion"
+                          />
+                        </div>
+                      );
+                    })}
+                    <div className="add-more-thumbnail" onClick={() => fileInputRef.current.click()}>
+                      <Plus size={18} />
+                      <span style={{ fontSize: '0.7rem', fontWeight: '700' }}>Add More</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    type="button"
+                    className="btn-primary"
+                    onClick={handleDeleteSelectedPhotos}
+                    disabled={selectedPhotoIndices.length === 0}
+                    style={{ flex: 1, opacity: selectedPhotoIndices.length === 0 ? 0.5 : 1 }}
+                  >
+                    <Trash2 size={16} />
+                    Delete Selected
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() => setIsEditingPhotos(false)}
+                    style={{ flex: 1 }}
+                  >
+                    Done
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
+                <p>No couple photos yet. Upload your first photo to get started!</p>
+                <button
+                  type="button"
+                  className="btn-primary"
+                  onClick={() => fileInputRef.current.click()}
+                  style={{ marginTop: '16px' }}
+                >
+                  <Plus size={16} />
+                  Upload Photo
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -632,7 +768,7 @@ const styles = {
   teaserImg: {
     width: '100%',
     height: '100%',
-    objectFit: 'cover',
+    objectFit: 'contain',
   },
   teaserOverlay: {
     position: 'absolute',
@@ -874,7 +1010,7 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     gap: '6px',
-    flex: '1 1 200px',
+    flex: '1 1 10px',
     alignItems: 'flex-start',
   },
   partnerNames: {
@@ -943,6 +1079,37 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
   },
+  closeBtn: {
+    position: 'absolute',
+    top: '16px',
+    right: '16px',
+    background: 'transparent',
+    border: 'none',
+    color: 'var(--text-muted)',
+    cursor: 'pointer',
+    padding: '4px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: '6px',
+    transition: 'color 0.2s',
+  },
+  uploadArea: {
+    background: 'rgba(253, 114, 150, 0.05)',
+    border: '1px solid var(--border-light)',
+    borderRadius: '12px',
+    padding: '12px',
+    minHeight: 'auto',
+  },
+  thumbnailCheckbox: {
+    position: 'absolute',
+    top: '6px',
+    right: '6px',
+    width: '18px',
+    height: '18px',
+    cursor: 'pointer',
+    accentColor: 'var(--primary)',
+  },
 };
 
 // Add hover behavior and transitions for slider elements
@@ -980,6 +1147,35 @@ if (typeof window !== 'undefined') {
       .combined-footer-responsive > div {
         align-items: center !important;
         text-align: center !important;
+      }
+    }
+    @media (max-width: 500px) {
+      .welcome-widget {
+        gap: 12px !important;
+      }
+      .welcome-quote-divider {
+        max-width: 100% !important;
+        flex: 1 1 100% !important;
+      }
+      .countdown-card {
+        min-width: 55px;
+        padding: 8px 12px;
+      }
+      .countdown-number {
+        font-size: 1.4rem;
+      }
+      .countdown-label {
+        font-size: 0.65rem;
+      }
+      .memoriesTeaserGrid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10px !important;
+      }
+      .teaserCard {
+        height: 110px;
+      }
+      .statsContainer {
+        grid-template-columns: 1fr 1fr !important;
       }
     }
   `;

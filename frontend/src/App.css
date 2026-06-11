@@ -369,7 +369,7 @@
 .wish-img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
 }
 
 .wish-fallback-img {
@@ -586,4 +586,712 @@
 .memory-action-btn.delete-btn:hover {
   color: var(--danger) !important;
 }
+
+/* ==========================================================================
+   Declarative Navigation Bar CSS Classes (Moved from inline styles)
+   ========================================================================== */
+.glass-nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--card-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-bottom: 1px solid var(--border-light);
+  padding: 12px 24px;
+  box-shadow: var(--card-shadow);
+  transition: var(--transition-smooth);
+}
+
+.nav-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: nowrap;
+}
+
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.logo-text {
+  font-size: 1.4rem;
+  font-weight: bold;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.03em;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.nav-link:hover {
+  background: rgba(253, 114, 150, 0.08);
+  color: var(--primary);
+}
+
+.nav-link.active {
+  color: var(--primary);
+  background: var(--primary-light);
+}
+
+.nav-right-group {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.nav-avatars-wrapper {
+  display: flex;
+  align-items: center;
+  position: relative;
+  margin-right: 8px;
+}
+
+.nav-avatar-me {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid var(--primary);
+  z-index: 2;
+  object-fit: cover;
+}
+
+.nav-avatar-partner {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid var(--secondary);
+  margin-left: -8px;
+  z-index: 1;
+  object-fit: cover;
+}
+
+.nav-avatar-heart {
+  position: absolute;
+  bottom: -2px;
+  left: 13px;
+  z-index: 3;
+  background: var(--card-bg);
+  border-radius: 50%;
+  padding: 1px;
+  width: 14px;
+  height: 14px;
+}
+
+.nav-avatar-placeholder {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px dashed var(--text-muted);
+  background: rgba(0,0,0,0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-left: -8px;
+  z-index: 1;
+}
+
+.nav-icon-button {
+  background: transparent;
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.nav-icon-button:hover {
+  background: rgba(0,0,0,0.04);
+}
+
+[data-theme="dark"] .nav-icon-button:hover {
+  background: rgba(255,255,255,0.06);
+}
+
+.nav-logout-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  color: var(--danger);
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: background 0.2s;
+}
+
+.nav-logout-btn:hover {
+  background: rgba(255, 77, 77, 0.08);
+}
+
+
+/* ==========================================================================
+   iPhone 12 / 14 Pro Mobile Responsiveness Media Queries (Screens <= 768px)
+   ========================================================================== */
+@media (max-width: 768px) {
+  /* 1. Mobile Bottom Tab Navigation & Clean Header */
+  .glass-nav {
+    position: sticky;
+    top: 0;
+    padding: 8px 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+  }
+
+  .nav-container {
+    flex-wrap: wrap;
+    justify-content: space-between;
+    width: 100%;
+    gap: 4px;
+  }
+
+  /* Nav links displayed below top bar on mobile */
+  .nav-links {
+    position: static;
+    bottom: auto;
+    left: auto;
+    right: auto;
+    height: auto;
+    padding-bottom: 0;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    align-items: flex-start;
+    padding-top: 4px;
+    padding-bottom: 4px;
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border-top: 1px solid var(--border-light);
+    border-radius: 0;
+    margin: 0;
+    z-index: auto;
+    box-shadow: none;
+    gap: 0;
+    width: 100%;
+    order: 3;
+  }
+
+  .nav-link {
+    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 2px;
+    padding: 4px 2px 0;
+    border-radius: 8px;
+    font-size: 0;
+    height: auto;
+    background: transparent !important;
+    color: var(--text-muted);
+    min-height: 40px;
+  }
+
+  .nav-link.active {
+    color: var(--primary);
+    background: transparent !important;
+  }
+
+  .nav-link .nav-link-icon {
+    width: 22px;
+    height: 22px;
+  }
+
+  .nav-link-label {
+    display: block !important;
+    font-size: 0.65rem;
+    font-weight: 600;
+    line-height: 1.2;
+    text-align: center;
+  }
+
+  .logout-text {
+    display: none !important;
+  }
+
+  .nav-logout-btn {
+    padding: 8px;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    justify-content: center;
+  }
+
+  /* 2. Page Content Spacing */
+  .main-content {
+    padding: 16px 16px 16px 16px;
+  }
+
+  /* 3. Dashboard Optimizations */
+  .welcome-widget {
+    padding: 16px !important;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px !important;
+    min-height: auto !important;
+  }
+
+  .welcome-widget .greeting {
+    font-size: 1.3rem !important;
+  }
+
+  .welcome-quote-divider {
+    border-left: none !important;
+    border-top: 1.5px solid rgba(253, 114, 150, 0.2) !important;
+    padding-left: 0 !important;
+    padding-top: 10px !important;
+    max-width: 100% !important;
+    width: 100%;
+  }
+
+  .welcome-quote-text {
+    font-size: 0.80rem !important;
+  }
+
+  .slider-frame-hover {
+    height: 280px !important; /* Compact photo slider on mobile */
+  }
+
+  /* Stack Polaroid Footer components vertically */
+  .combined-footer-responsive {
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+    gap: 8px !important;
+    padding: 12px 12px !important;
+  }
+
+  .story-details-side {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+  }
+
+  .story-counter-side {
+    border-top: 1px dashed var(--border-light) !important;
+    width: 100%;
+    padding-top: 8px !important;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .days-num-combined {
+    font-size: 2.8rem !important;
+    line-height: 1.1 !important;
+  }
+
+  .days-label-combined {
+    font-size: 0.78rem !important;
+    margin-top: 2px !important;
+  }
+
+  .date-editor-inline {
+    flex-direction: column !important;
+    align-items: center !important;
+    width: 100%;
+    gap: 8px !important;
+  }
+
+  .date-input-inline {
+    text-align: center !important;
+    width: 100% !important;
+    max-width: 180px !important;
+  }
+
+  .edit-date-btn-inline {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Dashboard gap reduction */
+  .dashboard-grid {
+    gap: 12px !important;
+  }
+
+  /* Reduce gaps between cards in columns */
+  .dashboard-grid > div {
+    gap: 8px !important;
+  }
+
+  /* 4. Memories Timeline Layout */
+  .timeline {
+    padding-left: 20px !important;
+    margin: 24px auto !important;
+  }
+
+  .timeline::before {
+    left: 5px !important;
+  }
+
+  .timeline-dot {
+    left: -23px !important; /* Perfectly centered on the mobile line */
+    width: 14px;
+    height: 14px;
+    border-width: 3px;
+  }
+
+  .memory-body {
+    padding: 16px !important;
+  }
+
+  .memory-img {
+    max-height: 280px !important;
+  }
+
+  /* 5. Preferences Page Styles */
+  .pref-container {
+    gap: 20px !important;
+  }
+
+  .partner-card {
+    padding: 20px 16px !important;
+  }
+
+  .pref-category-title {
+    font-size: 0.95rem !important;
+  }
+
+  .pref-item-row {
+    padding: 10px 0 !important;
+  }
+
+  .pref-item-name, .pref-item-value {
+    font-size: 0.9rem !important;
+  }
+
+  /* 6. Modal Overlays & Width constraints */
+  .modal-content {
+    margin: 16px !important;
+    width: calc(100% - 32px) !important;
+    padding: 20px !important;
+    border-radius: var(--border-radius-md) !important;
+  }
+
+  .modal-content h3 {
+    font-size: 1.2rem !important;
+  }
+}
+
+
+/* ==========================================================================
+   Optimizations for Small iPhones (iPhone 12/14 Pro at 390-430px width)
+   ========================================================================== */
+@media (max-width: 500px) {
+  /* Aggressive spacing optimization for small screens */
+  .main-content {
+    padding: 12px 12px 12px 12px !important;
+  }
+
+  .glass-panel {
+    padding: 14px;
+    border-radius: var(--border-radius-sm);
+  }
+
+  .glass-nav {
+    padding: 8px 12px;
+  }
+
+  .nav-container {
+    gap: 6px;
+  }
+
+  .logo-text {
+    font-size: 1.1rem;
+  }
+
+  .nav-avatar-me, .nav-avatar-partner {
+    width: 32px;
+    height: 32px;
+  }
+
+  .nav-avatars-wrapper {
+    margin-right: 4px;
+  }
+
+  /* Form inputs stay touchable but more compact */
+  .form-group {
+    margin-bottom: 14px;
+    gap: 6px;
+  }
+
+  .form-input, .form-textarea, .form-select {
+    padding: 10px 12px;
+    font-size: 0.95rem;
+    min-height: 44px;
+  }
+
+  .form-input:focus, .form-textarea:focus, .form-select:focus {
+    box-shadow: 0 0 0 2px rgba(253, 114, 150, 0.15);
+  }
+
+  /* Button sizing for touch targets */
+  .btn-primary, .btn-secondary {
+    padding: 10px 20px;
+    font-size: 0.95rem;
+    min-height: 44px;
+  }
+
+  /* Heading sizes for small screens */
+  h1 { font-size: 1.6rem; }
+  h2 { font-size: 1.4rem; }
+  h3 { font-size: 1.1rem; }
+  h4 { font-size: 1rem; }
+
+  /* Dashboard-specific optimizations */
+  .dashboard-grid {
+    gap: 12px;
+  }
+
+  .welcome-widget {
+    padding: 12px !important;
+    gap: 8px !important;
+    min-height: auto !important;
+  }
+
+  /* Prevent flex containers from growing and creating empty space */
+  .welcome-widget > div:first-child {
+    flex: 0 0 auto !important;
+  }
+
+  .welcome-quote-divider {
+    flex: 0 0 auto !important;
+    padding-top: 6px !important;
+  }
+
+  .welcome-widget .greeting {
+    font-size: 1.1rem !important;
+  }
+
+  .welcome-quote-text {
+    font-size: 0.72rem !important;
+  }
+
+  .hugeHeart {
+    width: 60px !important;
+    height: 60px !important;
+  }
+
+  .slider-frame-hover {
+    height: 240px !important;
+  }
+
+  .countdownWidget {
+    padding: 16px !important;
+  }
+
+  .countdown-card {
+    padding: 8px 10px;
+    min-width: 50px;
+  }
+
+  .countdown-number {
+    font-size: 1.2rem;
+  }
+
+  .countdown-label {
+    font-size: 0.65rem;
+  }
+
+  .statBox {
+    padding: 16px 12px;
+  }
+
+  .statVal {
+    font-size: 1.6rem;
+  }
+
+  .statLabel {
+    font-size: 0.7rem;
+  }
+
+  .daysNumCombined {
+    font-size: 2rem !important;
+  }
+
+  .daysLabelCombined {
+    font-size: 0.65rem !important;
+  }
+
+  /* Memories timeline on small screens */
+  .timeline {
+    padding-left: 16px !important;
+    margin: 16px auto !important;
+  }
+
+  .memory-img {
+    max-height: 240px !important;
+  }
+
+  .memory-body {
+    padding: 12px !important;
+  }
+
+  /* Carousel controls */
+  .carousel-arrow {
+    width: 32px;
+    height: 32px;
+    font-size: 1.2rem;
+  }
+
+  .carousel-arrow.left {
+    left: 12px;
+  }
+
+  .carousel-arrow.right {
+    right: 12px;
+  }
+
+  /* Wishlist grid */
+  .wishlist-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    margin-top: 16px;
+  }
+
+  .wish-img-container {
+    height: 200px;
+  }
+
+  .wish-details {
+    padding: 14px;
+  }
+
+  .wish-price {
+    font-size: 1.1rem;
+  }
+
+  /* Preferences page */
+  .pref-container {
+    gap: 16px !important;
+  }
+
+  .partner-card {
+    padding: 16px 14px !important;
+  }
+
+  .partner-avatar {
+    width: 60px;
+    height: 60px;
+  }
+
+  .pref-category-title {
+    font-size: 0.88rem !important;
+  }
+
+  .pref-item-row {
+    padding: 8px 0 !important;
+  }
+
+  .pref-item-name, .pref-item-value {
+    font-size: 0.85rem !important;
+  }
+
+  /* Modal adjustments */
+  .modal-content {
+    margin: 12px !important;
+    width: calc(100% - 24px) !important;
+    padding: 16px !important;
+    max-height: calc(100vh - 24px);
+  }
+
+  .modal-content h3 {
+    font-size: 1rem !important;
+  }
+
+  /* Checklist items */
+  .checklist-item {
+    padding: 8px 12px;
+  }
+
+  .checklist-checkbox {
+    width: 18px;
+    height: 18px;
+    min-width: 18px;
+  }
+
+  .checklist-text {
+    font-size: 0.9rem;
+  }
+
+  /* Image preview thumbnails */
+  .thumbnail-container {
+    width: 70px;
+    height: 70px;
+    border-radius: 10px;
+  }
+
+  .add-more-thumbnail {
+    width: 70px;
+    height: 70px;
+  }
+
+  /* Timeline card sizing */
+  .countdown-container {
+    gap: 12px;
+  }
+
+  /* Recent memories teaser */
+  .memoriesTeaserGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .teaserCard {
+    height: 120px;
+  }
+
+  .teaserTitle {
+    font-size: 0.75rem;
+  }
+
+  .teaserDate {
+    font-size: 0.65rem;
+  }
+
+  /* Modal overlay remains accessible */
+  .modal-overlay {
+    padding: 12px;
+  }
+}
+
 

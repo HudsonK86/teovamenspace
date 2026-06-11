@@ -25,6 +25,8 @@ export default function Memories({ user, partners = [], memories, setMemories, t
 
   const editFileInputRef = useRef(null);
 
+  const [editDraggedIdx, setEditDraggedIdx] = useState(null);
+
   const handleImageChange = (e) => {
     const files = Array.from(e.target.files);
     if (files.length > 0) {
@@ -201,6 +203,41 @@ export default function Memories({ user, partners = [], memories, setMemories, t
         reader.readAsDataURL(file);
       });
     }
+  };
+
+  const handleEditDragStartImage = (idx, isExisting) => {
+    setEditDraggedIdx({ idx, isExisting });
+  };
+
+  const handleEditDragOverImage = (e) => {
+    e.preventDefault();
+  };
+
+  const handleEditDropImage = (targetIdx, isTargetExisting) => {
+    if (!editDraggedIdx) return;
+
+    const { idx: draggedIdx, isExisting: isDraggedExisting } = editDraggedIdx;
+
+    if (isDraggedExisting && isTargetExisting) {
+      const newExisting = [...editExistingImages];
+      const draggedImg = newExisting[draggedIdx];
+      newExisting.splice(draggedIdx, 1);
+      newExisting.splice(targetIdx, 0, draggedImg);
+      setEditExistingImages(newExisting);
+    } else if (!isDraggedExisting && !isTargetExisting) {
+      const newPreviews = [...editImagePreviews];
+      const newFiles = [...editImageFiles];
+      const draggedPreview = newPreviews[draggedIdx];
+      const draggedFile = newFiles[draggedIdx];
+      newPreviews.splice(draggedIdx, 1);
+      newFiles.splice(draggedIdx, 1);
+      newPreviews.splice(targetIdx, 0, draggedPreview);
+      newFiles.splice(targetIdx, 0, draggedFile);
+      setEditImagePreviews(newPreviews);
+      setEditImageFiles(newFiles);
+    }
+
+    setEditDraggedIdx(null);
   };
 
   const handleEditSubmit = async (e) => {
@@ -421,14 +458,22 @@ export default function Memories({ user, partners = [], memories, setMemories, t
                 {editExistingImages.length > 0 || editImagePreviews.length > 0 ? (
                   <div className="previews-wrapper" onClick={(e) => e.stopPropagation()}>
                     {/* Existing database images */}
-                    {editExistingImages.map((img) => {
+                    {editExistingImages.map((img, idx) => {
                       const fullUrl = img.url.startsWith('/uploads/') ? `${API_BASE_URL}${img.url}` : img.url;
                       return (
-                        <div key={img.id} className="thumbnail-container">
+                        <div
+                          key={img.id}
+                          className="thumbnail-container"
+                          draggable
+                          onDragStart={() => handleEditDragStartImage(idx, true)}
+                          onDragOver={handleEditDragOverImage}
+                          onDrop={() => handleEditDropImage(idx, true)}
+                          style={{ opacity: editDraggedIdx?.isExisting && editDraggedIdx?.idx === idx ? 0.5 : 1 }}
+                        >
                           <img src={fullUrl} alt="Existing" className="thumbnail-image" />
-                          <button 
-                            type="button" 
-                            onClick={() => removeExistingImage(img.id)} 
+                          <button
+                            type="button"
+                            onClick={() => removeExistingImage(img.id)}
                             className="remove-thumbnail-btn"
                             title="Remove Photo"
                           >
@@ -437,14 +482,22 @@ export default function Memories({ user, partners = [], memories, setMemories, t
                         </div>
                       );
                     })}
-                    
+
                     {/* Newly selected image previews */}
                     {editImagePreviews.map((preview, index) => (
-                      <div key={index} className="thumbnail-container">
+                      <div
+                        key={index}
+                        className="thumbnail-container"
+                        draggable
+                        onDragStart={() => handleEditDragStartImage(index, false)}
+                        onDragOver={handleEditDragOverImage}
+                        onDrop={() => handleEditDropImage(index, false)}
+                        style={{ opacity: !editDraggedIdx?.isExisting && editDraggedIdx?.idx === index ? 0.5 : 1 }}
+                      >
                         <img src={preview} alt={`Selected ${index + 1}`} className="thumbnail-image" />
-                        <button 
-                          type="button" 
-                          onClick={() => removeSelectedEditImage(index)} 
+                        <button
+                          type="button"
+                          onClick={() => removeSelectedEditImage(index)}
                           className="remove-thumbnail-btn"
                           title="Remove Photo"
                         >

@@ -76,7 +76,11 @@ async function handleAvatarUpload(file) {
   fs.writeFileSync(localPath, file.buffer);
   return `/uploads/${fileName}`;
 }
-const JWT_SECRET = process.env.JWT_SECRET || 'kuteovapemen-secret-dev-key';
+// JWT_SECRET is validated at startup by middleware/auth.js — reuse the same var here
+if (!process.env.JWT_SECRET) {
+  throw new Error('FATAL: JWT_SECRET environment variable is not set. Refusing to start.');
+}
+const JWT_SECRET = process.env.JWT_SECRET;
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 
 const client = new OAuth2Client(GOOGLE_CLIENT_ID);
@@ -191,8 +195,13 @@ router.post('/google', async (req, res) => {
   }
 });
 
-// Mock Login Route (Highly useful for local testing and developer evaluation)
+// Mock Login Route (local testing ONLY — disabled in production)
 router.post('/mock', async (req, res) => {
+  // Block this endpoint entirely in production to prevent bypass of real Google auth
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(404).json({ error: 'Not found' });
+  }
+
   const { email, name, role } = req.body; // e.g. "partner_1" or "partner_2"
 
   if (!email || !name || !role) {
@@ -257,7 +266,8 @@ router.get('/me', async (req, res) => {
 });
 
 // Get both partner profiles (for widgets, showing avatars, names, etc.)
-router.get('/partners', async (req, res) => {
+// Requires authentication — partner info should not be publicly readable
+router.get('/partners', authenticateToken, async (req, res) => {
   try {
     const partners = await prisma.user.findMany({
       orderBy: { role: 'asc' }
