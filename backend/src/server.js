@@ -102,8 +102,8 @@ app.use('/uploads', express.static(UPLOADS_PATH, {
   }
 }));
 
-// Apply auth rate limiter to auth routes
-app.use('/api/auth', authLimiter);
+// Apply auth rate limiter only to Google login endpoint to prevent brute-forcing
+app.use('/api/auth/google', authLimiter);
 
 // Mount APIs
 app.use('/api/auth', authRouter);
