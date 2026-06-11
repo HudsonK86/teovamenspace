@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Plus, X, Camera, Trash2, BookOpen, AlertCircle, Pencil } from 'lucide-react';
+import { Plus, X, Camera, Trash2, BookOpen, AlertCircle, Pencil, ChevronUp, ChevronDown } from 'lucide-react';
 import { API_BASE_URL } from '../config.js';
 
 export default function Memories({ user, partners = [], memories, setMemories, token }) {
@@ -240,6 +240,39 @@ export default function Memories({ user, partners = [], memories, setMemories, t
     setEditDraggedIdx(null);
   };
 
+  const moveEditImageUp = (idx, isExisting) => {
+    if (idx === 0) return;
+    if (isExisting) {
+      const newExisting = [...editExistingImages];
+      [newExisting[idx - 1], newExisting[idx]] = [newExisting[idx], newExisting[idx - 1]];
+      setEditExistingImages(newExisting);
+    } else {
+      const newPreviews = [...editImagePreviews];
+      const newFiles = [...editImageFiles];
+      [newPreviews[idx - 1], newPreviews[idx]] = [newPreviews[idx], newPreviews[idx - 1]];
+      [newFiles[idx - 1], newFiles[idx]] = [newFiles[idx], newFiles[idx - 1]];
+      setEditImagePreviews(newPreviews);
+      setEditImageFiles(newFiles);
+    }
+  };
+
+  const moveEditImageDown = (idx, isExisting) => {
+    const list = isExisting ? editExistingImages : editImagePreviews;
+    if (idx === list.length - 1) return;
+    if (isExisting) {
+      const newExisting = [...editExistingImages];
+      [newExisting[idx], newExisting[idx + 1]] = [newExisting[idx + 1], newExisting[idx]];
+      setEditExistingImages(newExisting);
+    } else {
+      const newPreviews = [...editImagePreviews];
+      const newFiles = [...editImageFiles];
+      [newPreviews[idx], newPreviews[idx + 1]] = [newPreviews[idx + 1], newPreviews[idx]];
+      [newFiles[idx], newFiles[idx + 1]] = [newFiles[idx + 1], newFiles[idx]];
+      setEditImagePreviews(newPreviews);
+      setEditImageFiles(newFiles);
+    }
+  };
+
   const handleEditSubmit = async (e) => {
     e.preventDefault();
     if (!editTitle || !editDate) {
@@ -468,7 +501,7 @@ export default function Memories({ user, partners = [], memories, setMemories, t
                           onDragStart={() => handleEditDragStartImage(idx, true)}
                           onDragOver={handleEditDragOverImage}
                           onDrop={() => handleEditDropImage(idx, true)}
-                          style={{ opacity: editDraggedIdx?.isExisting && editDraggedIdx?.idx === idx ? 0.5 : 1 }}
+                          style={{ opacity: editDraggedIdx?.isExisting && editDraggedIdx?.idx === idx ? 0.5 : 1, position: 'relative' }}
                         >
                           <img src={fullUrl} alt="Existing" className="thumbnail-image" />
                           <button
@@ -479,6 +512,26 @@ export default function Memories({ user, partners = [], memories, setMemories, t
                           >
                             <X size={10} />
                           </button>
+                          <div style={styles.mobileArrowButtons}>
+                            <button
+                              type="button"
+                              onClick={() => moveEditImageUp(idx, true)}
+                              disabled={idx === 0}
+                              style={{ ...styles.arrowBtn, opacity: idx === 0 ? 0.3 : 1 }}
+                              title="Move up"
+                            >
+                              <ChevronUp size={14} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => moveEditImageDown(idx, true)}
+                              disabled={idx === editExistingImages.length - 1}
+                              style={{ ...styles.arrowBtn, opacity: idx === editExistingImages.length - 1 ? 0.3 : 1 }}
+                              title="Move down"
+                            >
+                              <ChevronDown size={14} />
+                            </button>
+                          </div>
                         </div>
                       );
                     })}
@@ -492,7 +545,7 @@ export default function Memories({ user, partners = [], memories, setMemories, t
                         onDragStart={() => handleEditDragStartImage(index, false)}
                         onDragOver={handleEditDragOverImage}
                         onDrop={() => handleEditDropImage(index, false)}
-                        style={{ opacity: !editDraggedIdx?.isExisting && editDraggedIdx?.idx === index ? 0.5 : 1 }}
+                        style={{ opacity: !editDraggedIdx?.isExisting && editDraggedIdx?.idx === index ? 0.5 : 1, position: 'relative' }}
                       >
                         <img src={preview} alt={`Selected ${index + 1}`} className="thumbnail-image" />
                         <button
@@ -503,6 +556,26 @@ export default function Memories({ user, partners = [], memories, setMemories, t
                         >
                           <X size={10} />
                         </button>
+                        <div style={styles.mobileArrowButtons}>
+                          <button
+                            type="button"
+                            onClick={() => moveEditImageUp(index, false)}
+                            disabled={index === 0}
+                            style={{ ...styles.arrowBtn, opacity: index === 0 ? 0.3 : 1 }}
+                            title="Move up"
+                          >
+                            <ChevronUp size={14} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => moveEditImageDown(index, false)}
+                            disabled={index === editImagePreviews.length - 1}
+                            style={{ ...styles.arrowBtn, opacity: index === editImagePreviews.length - 1 ? 0.3 : 1 }}
+                            title="Move down"
+                          >
+                            <ChevronDown size={14} />
+                          </button>
+                        </div>
                       </div>
                     ))}
                     <div className="add-more-thumbnail" onClick={() => editFileInputRef.current.click()}>
@@ -843,4 +916,47 @@ const styles = {
     background: 'var(--card-bg)',
     border: '1px dashed var(--border-card)',
   },
+  mobileArrowButtons: {
+    position: 'absolute',
+    bottom: '6px',
+    left: '50%',
+    transform: 'translateX(-50%)',
+    display: 'flex',
+    gap: '4px',
+    opacity: 0,
+    transition: 'opacity 0.2s',
+  },
+  arrowBtn: {
+    background: 'rgba(255, 255, 255, 0.95)',
+    border: 'none',
+    width: '24px',
+    height: '24px',
+    borderRadius: '50%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    color: 'var(--primary)',
+    boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
+    transition: 'opacity 0.2s',
+  },
 };
+
+if (typeof window !== 'undefined') {
+  const css = `
+    .thumbnail-container:hover .mobileArrowButtons {
+      opacity: 1 !important;
+    }
+    .mobileArrowButtons button:disabled {
+      cursor: not-allowed !important;
+    }
+    @media (max-width: 820px) {
+      .mobileArrowButtons {
+        opacity: 1 !important;
+      }
+    }
+  `;
+  const style = document.createElement('style');
+  style.textContent = css;
+  document.head.appendChild(style);
+}

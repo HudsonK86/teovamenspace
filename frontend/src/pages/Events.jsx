@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Plus, X, Calendar, CheckSquare, Trash2, CheckCircle2, User, HelpCircle, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, X, Calendar, CheckSquare, Trash2, CheckCircle2, User, HelpCircle, AlertCircle, Edit3 } from 'lucide-react';
 import { API_BASE_URL } from '../config.js';
 
 export default function Events({ user, partners, events, setEvents, token }) {
@@ -9,10 +9,33 @@ export default function Events({ user, partners, events, setEvents, token }) {
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
-  // No shared newTasks object state needed
+  const [editingId, setEditingId] = useState(null);
+  const [countdowns, setCountdowns] = useState({});
 
   const partner = partners.find(p => p.id !== user?.id);
+
+  // Calculate countdowns for all events
+  useEffect(() => {
+    const updateCountdowns = () => {
+      const newCountdowns = {};
+      events.forEach(event => {
+        const diffMs = new Date(event.date) - new Date();
+        if (diffMs <= 0) {
+          newCountdowns[event.id] = { days: 0, hours: 0, minutes: 0 };
+        } else {
+          const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+          const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+          const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+          newCountdowns[event.id] = { days, hours, minutes };
+        }
+      });
+      setCountdowns(newCountdowns);
+    };
+
+    updateCountdowns();
+    const interval = setInterval(updateCountdowns, 60000);
+    return () => clearInterval(interval);
+  }, [events]);
 
   const handleAddEvent = async (e) => {
     e.preventDefault();
@@ -25,8 +48,13 @@ export default function Events({ user, partners, events, setEvents, token }) {
     setError('');
 
     try {
-      const res = await fetch(`${API_BASE_URL}/api/events`, {
-        method: 'POST',
+      const url = editingId
+        ? `${API_BASE_URL}/api/events/${editingId}`
+        : `${API_BASE_URL}/api/events`;
+      const method = editingId ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
@@ -35,9 +63,16 @@ export default function Events({ user, partners, events, setEvents, token }) {
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to create event');
+      if (!res.ok) throw new Error(data.error || `Failed to ${editingId ? 'update' : 'create'} event`);
 
-      setEvents(prev => [...prev, { ...data, checklist: [] }].sort((a, b) => new Date(a.date) - new Date(b.date)));
+      if (editingId) {
+        setEvents(prev => prev.map(e => e.id === editingId ? { ...data, checklist: e.checklist } : e)
+          .sort((a, b) => new Date(a.date) - new Date(b.date)));
+        setEditingId(null);
+      } else {
+        setEvents(prev => [...prev, { ...data, checklist: [] }].sort((a, b) => new Date(a.date) - new Date(b.date)));
+      }
+
       setTitle('');
       setDate('');
       setDescription('');
@@ -47,6 +82,21 @@ export default function Events({ user, partners, events, setEvents, token }) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleEditEvent = (event) => {
+    setTitle(event.title);
+    const dateObj = new Date(event.date);
+    const year = dateObj.getFullYear();
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    const hours = String(dateObj.getHours()).padStart(2, '0');
+    const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+    setDate(`${year}-${month}-${day}T${hours}:${minutes}`);
+    setDescription(event.description || '');
+    setEditingId(event.id);
+    setShowAddForm(true);
+    setError('');
   };
 
   const handleDeleteEvent = async (id) => {
@@ -193,12 +243,12 @@ export default function Events({ user, partners, events, setEvents, token }) {
       {showAddForm && (
         <div className="modal-overlay">
           <div className="glass-panel modal-content" style={{ position: 'relative' }}>
-            <button onClick={() => setShowAddForm(false)} style={styles.closeBtn}>
+            <button onClick={() => { setShowAddForm(false); setEditingId(null); }} style={styles.closeBtn}>
               <X size={20} />
             </button>
             <h3 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Calendar size={20} color="var(--primary)" />
-              Add Event / Milestone
+              {editingId ? 'Edit Event' : 'Add Event / Milestone'}
             </h3>
 
             {error && (
@@ -244,7 +294,7 @@ export default function Events({ user, partners, events, setEvents, token }) {
               </div>
 
               <button type="submit" className="btn-primary" style={{ justifyContent: 'center' }} disabled={loading}>
-                {loading ? 'Creating...' : 'Create Event'}
+                {loading ? (editingId ? 'Updating...' : 'Creating...') : (editingId ? 'Update Event' : 'Create Event')}
               </button>
             </form>
           </div>
@@ -267,9 +317,9 @@ export default function Events({ user, partners, events, setEvents, token }) {
                     <div style={styles.eventDateRow}>
                       <Calendar size={14} color="var(--primary)" />
                       <span>
-                        {dateObj.toLocaleDateString(undefined, { 
-                          weekday: 'short', 
-                          month: 'short', 
+                        {dateObj.toLocaleDateString(undefined, {
+                          weekday: 'short',
+                          month: 'short',
                           day: 'numeric',
                           year: 'numeric',
                           hour: '2-digit',
@@ -279,14 +329,41 @@ export default function Events({ user, partners, events, setEvents, token }) {
                       {isPast && <span style={styles.pastBadge}>Past</span>}
                     </div>
                   </div>
-                  <button 
-                    onClick={() => handleDeleteEvent(event.id)} 
-                    style={styles.deleteEventBtn}
-                    title="Delete Event"
-                  >
-                    <Trash2 size={16} />
-                  </button>
+                  <div style={styles.eventCardActions}>
+                    <button
+                      onClick={() => handleEditEvent(event)}
+                      style={styles.editEventBtn}
+                      title="Edit Event"
+                    >
+                      <Edit3 size={16} />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteEvent(event.id)}
+                      style={styles.deleteEventBtn}
+                      title="Delete Event"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
                 </div>
+
+                {/* Countdown Display */}
+                {!isPast && countdowns[event.id] && (
+                  <div style={styles.countdownRow}>
+                    <div style={styles.countdownItem}>
+                      <span style={styles.countdownNumber}>{countdowns[event.id].days}</span>
+                      <span style={styles.countdownLabel}>Days</span>
+                    </div>
+                    <div style={styles.countdownItem}>
+                      <span style={styles.countdownNumber}>{countdowns[event.id].hours}</span>
+                      <span style={styles.countdownLabel}>Hours</span>
+                    </div>
+                    <div style={styles.countdownItem}>
+                      <span style={styles.countdownNumber}>{countdowns[event.id].minutes}</span>
+                      <span style={styles.countdownLabel}>Mins</span>
+                    </div>
+                  </div>
+                )}
 
                 {event.description && (
                   <p style={styles.eventDesc}>{event.description}</p>
@@ -488,6 +565,58 @@ const styles = {
     borderBottom: '1px solid var(--border-light)',
     paddingBottom: '16px',
   },
+  eventCardActions: {
+    display: 'flex',
+    gap: '8px',
+  },
+  editEventBtn: {
+    background: 'transparent',
+    border: 'none',
+    cursor: 'pointer',
+    color: 'var(--text-muted)',
+    padding: '4px',
+    borderRadius: '6px',
+    transition: 'color 0.2s',
+  },
+  deleteEventBtn: {
+    background: 'transparent',
+    border: 'none',
+    cursor: 'pointer',
+    color: 'var(--text-muted)',
+    padding: '4px',
+    borderRadius: '6px',
+    transition: 'color 0.2s',
+  },
+  countdownRow: {
+    display: 'flex',
+    gap: '12px',
+    marginTop: '12px',
+    paddingBottom: '16px',
+    borderBottom: '1px solid var(--border-light)',
+  },
+  countdownItem: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    padding: '8px 12px',
+    background: 'rgba(253, 114, 150, 0.08)',
+    borderRadius: '8px',
+    flex: 1,
+  },
+  countdownNumber: {
+    fontSize: '1.4rem',
+    fontWeight: '800',
+    color: 'var(--primary)',
+    lineHeight: '1',
+  },
+  countdownLabel: {
+    fontSize: '0.65rem',
+    fontWeight: '700',
+    color: 'var(--text-muted)',
+    textTransform: 'uppercase',
+    marginTop: '4px',
+    letterSpacing: '0.05em',
+  },
   eventTitle: {
     fontSize: '1.4rem',
     fontWeight: '700',
@@ -618,6 +747,12 @@ if (typeof window !== 'undefined') {
       cursor: pointer;
     }
     .checklist-item:hover button {
+      color: var(--danger) !important;
+    }
+    .glass-panel:has(.eventCardHeader):hover .editEventBtn {
+      color: var(--secondary) !important;
+    }
+    .glass-panel:has(.eventCardHeader):hover .deleteEventBtn {
       color: var(--danger) !important;
     }
   `;

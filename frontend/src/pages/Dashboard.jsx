@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Heart, Sparkles, BookOpen, Gift, Calendar, CheckSquare, MessageCircleHeart, Plus, Trash2, Edit3, Save, X } from 'lucide-react';
+import { Heart, Sparkles, BookOpen, Gift, Calendar, CheckSquare, MessageCircleHeart, Plus, Trash2, Edit3, Save, X, ChevronUp, ChevronDown } from 'lucide-react';
 import { API_BASE_URL } from '../config.js';
 
 const ROMANTIC_QUOTES = [
@@ -154,6 +154,26 @@ export default function Dashboard({ user, partners, memories, events, wishlistIt
       pictures: newPhotos
     }));
     setDraggedPhotoIdx(null);
+  };
+
+  const movePhotoUp = (idx) => {
+    if (idx === 0) return;
+    const newPhotos = [...photos];
+    [newPhotos[idx - 1], newPhotos[idx]] = [newPhotos[idx], newPhotos[idx - 1]];
+    setCoupleSettings(prev => ({
+      ...prev,
+      pictures: newPhotos
+    }));
+  };
+
+  const movePhotoDown = (idx) => {
+    if (idx === photos.length - 1) return;
+    const newPhotos = [...photos];
+    [newPhotos[idx], newPhotos[idx + 1]] = [newPhotos[idx + 1], newPhotos[idx]];
+    setCoupleSettings(prev => ({
+      ...prev,
+      pictures: newPhotos
+    }));
   };
 
   const handleSaveDate = async () => {
@@ -562,7 +582,7 @@ export default function Dashboard({ user, partners, memories, events, wishlistIt
                           onDragStart={() => handleDragStart(idx)}
                           onDragOver={handleDragOver}
                           onDrop={() => handleDrop(idx)}
-                          style={{ opacity: draggedPhotoIdx === idx ? 0.5 : 1 }}
+                          style={{ opacity: draggedPhotoIdx === idx ? 0.5 : 1, position: 'relative' }}
                         >
                           <img src={fullUrl} alt={`Photo ${idx + 1}`} className="thumbnail-image" />
                           <input
@@ -578,6 +598,26 @@ export default function Dashboard({ user, partners, memories, events, wishlistIt
                             style={styles.thumbnailCheckbox}
                             title="Select for deletion"
                           />
+                          <div style={styles.mobileArrowButtons}>
+                            <button
+                              type="button"
+                              onClick={() => movePhotoUp(idx)}
+                              disabled={idx === 0}
+                              style={{ ...styles.arrowBtn, opacity: idx === 0 ? 0.3 : 1 }}
+                              title="Move up"
+                            >
+                              <ChevronUp size={14} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => movePhotoDown(idx)}
+                              disabled={idx === photos.length - 1}
+                              style={{ ...styles.arrowBtn, opacity: idx === photos.length - 1 ? 0.3 : 1 }}
+                              title="Move down"
+                            >
+                              <ChevronDown size={14} />
+                            </button>
+                          </div>
                         </div>
                       );
                     })}
@@ -1110,6 +1150,30 @@ const styles = {
     cursor: 'pointer',
     accentColor: 'var(--primary)',
   },
+  mobileArrowButtons: {
+    position: 'absolute',
+    bottom: '6px',
+    left: '50%',
+    transform: 'translateX(-50%)',
+    display: 'flex',
+    gap: '4px',
+    opacity: 0,
+    transition: 'opacity 0.2s',
+  },
+  arrowBtn: {
+    background: 'rgba(255, 255, 255, 0.95)',
+    border: 'none',
+    width: '24px',
+    height: '24px',
+    borderRadius: '50%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    color: 'var(--primary)',
+    boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
+    transition: 'opacity 0.2s',
+  },
 };
 
 // Add hover behavior and transitions for slider elements
@@ -1127,6 +1191,17 @@ if (typeof window !== 'undefined') {
     }
     .slider-placeholder-hover:hover .placeholder-overlay-hover {
       background: rgba(253, 114, 150, 0.25) !important;
+    }
+    .thumbnail-container:hover .mobileArrowButtons {
+      opacity: 1 !important;
+    }
+    .mobileArrowButtons button:disabled {
+      cursor: not-allowed !important;
+    }
+    @media (max-width: 820px) {
+      .mobileArrowButtons {
+        opacity: 1 !important;
+      }
     }
     @media (max-width: 820px) {
       .welcome-quote-divider {

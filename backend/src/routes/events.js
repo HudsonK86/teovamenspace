@@ -58,6 +58,41 @@ router.post('/', authenticateToken, async (req, res) => {
   }
 });
 
+// PUT update an event
+router.put('/:id', authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  const { title, date, description } = req.body;
+
+  if (!title || !date) {
+    return res.status(400).json({ error: 'title and date are required' });
+  }
+
+  try {
+    const event = await prisma.event.update({
+      where: { id },
+      data: {
+        title,
+        date: new Date(date),
+        description
+      },
+      include: {
+        checklist: {
+          include: {
+            user: {
+              select: { id: true, name: true, avatar: true, role: true }
+            }
+          },
+          orderBy: { id: 'asc' }
+        }
+      }
+    });
+
+    res.json(event);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // DELETE an event
 router.delete('/:id', authenticateToken, async (req, res) => {
   const { id } = req.params;
