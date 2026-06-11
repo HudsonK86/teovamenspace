@@ -6,10 +6,8 @@ const getApiBaseUrl = () => {
     return 'http://localhost:5001';
   }
   
-  // In production (EC2), we serve API from the same host on port 5001,
-  // or via a reverse proxy (e.g. Nginx redirecting /api to port 5001).
-  // Let's assume Nginx is proxying or it's port 5001 directly.
-  return `${window.location.protocol}//${window.location.hostname}:5001`;
+  // In production, Nginx reverse proxies /api requests on port 80/443 directly
+  return `${window.location.protocol}//${window.location.hostname}`;
 };
 
 export const API_BASE_URL = getApiBaseUrl();

@@ -3,11 +3,13 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
 
+import { API_BASE_URL } from './config.js'
+
 // Intercept errors and console logs to send to backend for remote debugging
 if (typeof window !== 'undefined') {
   const logToBackend = async (type, data) => {
     try {
-      await fetch('http://localhost:5001/api/debug/log', {
+      await fetch(`${API_BASE_URL}/api/debug/log`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type, data, timestamp: new Date().toISOString() })
