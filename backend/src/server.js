@@ -33,14 +33,14 @@ const globalLimiter = rateLimit({
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // 10 auth attempts per window
+  max: 50, // 50 auth attempts per window (more forgiving for testing/setup)
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many authentication attempts, please try again later' }
 });
 
-// Apply rate limiting globally first
-app.use(globalLimiter);
+// Disable global rate limiter for private couples app to prevent browsing/image loading blocks
+// app.use(globalLimiter);
 
 // CORS setup - restrict origins based on environment
 const getCorsOrigins = () => {
