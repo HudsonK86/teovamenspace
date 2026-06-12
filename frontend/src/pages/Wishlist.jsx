@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Plus, X, Camera, Gift, ExternalLink, CheckCircle, Trash2, Heart, AlertCircle, Edit, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, X, Camera, Gift, ExternalLink, CheckCircle, Trash2, Heart, AlertCircle, Edit3, ChevronLeft, ChevronRight } from 'lucide-react';
 import { API_BASE_URL } from '../config.js';
 const getCurrencySymbol = (currency) => {
   switch (currency) {
@@ -734,7 +734,7 @@ export default function Wishlist({ user, partners, wishlistItems, setWishlistIte
                           style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px' }}
                           title="Edit Wish"
                         >
-                          <Edit size={16} />
+                          <Edit3 size={16} />
                         </button>
                         <button 
                           onClick={(e) => {

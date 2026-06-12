@@ -323,11 +323,10 @@ export default function Dashboard({ user, partners, memories, events, wishlistIt
               </h3>
               <button
                 onClick={handleOpenEditPhotos}
-                style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--primary)', fontSize: '0.9rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}
+                style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--primary)', display: 'flex', alignItems: 'center' }}
                 title="Edit photos"
               >
                 <Edit3 size={16} />
-                Edit
               </button>
             </div>
 
