@@ -639,7 +639,37 @@ export default function Wishlist({ user, partners, wishlistItems, setWishlistIte
                 </div>
 
                 <div className="wish-details">
-                  <h3 style={{ fontSize: '1.2rem', marginBottom: '4px' }}>{item.title}</h3>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                    <h3 style={{ fontSize: '1.2rem', margin: 0 }}>{item.title}</h3>
+                    {/* Inline edit/remove buttons for owner's item */}
+                    {activeTab === 'mine' && !item.isPurchased && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            startEditing(item);
+                            setSelectedWishItemId(item.id);
+                          }}
+                          className="memory-action-btn edit-btn"
+                          style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px' }}
+                          title="Edit Wish"
+                        >
+                          <Edit size={16} />
+                        </button>
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteWish(item.id);
+                          }}
+                          className="memory-action-btn delete-btn"
+                          style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px' }}
+                          title="Delete Wish"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
                   {item.price !== null && item.price !== undefined && (
                     <span className="wish-price">
                       {formatPrice(item.price, item.currency)}
@@ -694,69 +724,39 @@ export default function Wishlist({ user, partners, wishlistItems, setWishlistIte
                   )}
 
                   {/* Actions Area */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: 'auto', paddingTop: '15px' }}>
-                    {/* Shopping URL */}
-                    {item.url && (
-                      <a 
-                        href={item.url} 
-                        target="_blank" 
-                        rel="noopener noreferrer" 
-                        className="btn-secondary"
-                        onClick={(e) => e.stopPropagation()}
-                        style={{ padding: '8px 12px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'center', width: '100%' }}
-                      >
-                        <ExternalLink size={14} />
-                        Buy Link
-                      </a>
-                    )}
+                  {((activeTab === 'partner') || (activeTab === 'mine' && item.url)) && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: 'auto', paddingTop: '15px' }}>
+                      {/* Shopping URL */}
+                      {item.url && (
+                        <a 
+                          href={item.url} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="btn-secondary"
+                          onClick={(e) => e.stopPropagation()}
+                          style={{ padding: '8px 12px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'center', width: '100%' }}
+                        >
+                          <ExternalLink size={14} />
+                          Buy Link
+                        </a>
+                      )}
 
-                    {/* Secondary Actions */}
-                    <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
-                      {activeTab === 'partner' ? (
+                      {/* Partner actions */}
+                      {activeTab === 'partner' && (
                         <button 
                           onClick={(e) => {
                             e.stopPropagation();
                             handleMarkPurchased(item.id, item.isPurchased);
                           }}
                           className={item.isPurchased ? 'btn-secondary' : 'btn-primary'}
-                          style={{ padding: '8px 12px', fontSize: '0.85rem', flex: 1, justifyContent: 'center' }}
+                          style={{ padding: '8px 12px', fontSize: '0.85rem', width: '100%', justifyContent: 'center' }}
                         >
                           <CheckCircle size={14} />
                           {item.isPurchased ? 'Mark Unbought' : 'Mark Purchased'}
                         </button>
-                      ) : (
-                        !item.isPurchased && (
-                          <>
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                startEditing(item);
-                                setSelectedWishItemId(item.id);
-                              }}
-                              className="btn-secondary"
-                              style={{ padding: '8px 12px', fontSize: '0.85rem', flex: 1, justifyContent: 'center' }}
-                              title="Edit Wish"
-                            >
-                              <Edit size={14} />
-                              Edit
-                            </button>
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteWish(item.id);
-                              }}
-                              className="btn-secondary"
-                              style={{ padding: '8px 12px', fontSize: '0.85rem', color: 'var(--danger)', flex: 1, justifyContent: 'center' }}
-                              title="Delete Wish"
-                            >
-                              <Trash2 size={14} />
-                              Remove
-                            </button>
-                          </>
-                        )
                       )}
                     </div>
-                  </div>
+                  )}
                 </div>
 
               </div>
