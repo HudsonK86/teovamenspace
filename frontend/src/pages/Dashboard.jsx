@@ -39,6 +39,7 @@ export default function Dashboard({ user, partners, memories, events, wishlistIt
   const [newFiles, setNewFiles] = useState([]);
   const [newPreviews, setNewPreviews] = useState([]);
   const [draggedPhotoIdx, setDraggedPhotoIdx] = useState(null);
+  const [loading, setLoading] = useState(false);
   
   const fileInputRef = useRef(null);
   const editFileInputRef = useRef(null);
