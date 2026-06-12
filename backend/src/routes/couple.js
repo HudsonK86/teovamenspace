@@ -259,4 +259,43 @@ router.delete('/pictures', authenticateToken, async (req, res) => {
   }
 });
 
+// PUT update couple pictures order & list
+router.put('/pictures', authenticateToken, async (req, res) => {
+  const { pictures } = req.body;
+  if (!pictures || !Array.isArray(pictures)) {
+    return res.status(400).json({ error: 'pictures array is required' });
+  }
+
+  try {
+    const settings = await getOrInitCoupleSettings();
+    const removedPictures = settings.pictures.filter(pic => !pictures.includes(pic));
+
+    const updated = await prisma.coupleSettings.update({
+      where: { id: settings.id },
+      data: {
+        pictures: pictures
+      }
+    });
+
+    // Clean up local files for removed pictures
+    for (const url of removedPictures) {
+      if (url && url.startsWith('/uploads/')) {
+        try {
+          const localFilePath = sanitizePath('.', url);
+          if (fs.existsSync(localFilePath)) {
+            fs.unlinkSync(localFilePath);
+          }
+        } catch (err) {
+          console.error('File delete failed:', err.message);
+        }
+      }
+    }
+
+    res.json(updated);
+  } catch (error) {
+    console.error('PUT couple pictures error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;

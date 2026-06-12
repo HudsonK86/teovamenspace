@@ -402,7 +402,13 @@ export default function Wishlist({ user, partners, wishlistItems, setWishlistIte
               
               {/* Drag & Drop Image Uploader */}
               <div 
-                style={styles.uploadArea} 
+                style={{
+                  ...styles.uploadArea,
+                  height: imagePreviews.length > 0 ? 'auto' : '140px',
+                  maxHeight: '200px',
+                  overflowY: 'auto',
+                  alignItems: imagePreviews.length > 0 ? 'flex-start' : 'center'
+                }} 
                 onDragOver={handleDragOver}
                 onDrop={handleDrop}
                 onClick={() => {
@@ -807,7 +813,13 @@ export default function Wishlist({ user, partners, wishlistItems, setWishlistIte
                 
                 {/* Drag & Drop Image Uploader for Editing */}
                 <div 
-                  style={styles.uploadArea} 
+                  style={{
+                    ...styles.uploadArea,
+                    height: (editExistingImages.length > 0 || editImagePreviews.length > 0) ? 'auto' : '140px',
+                    maxHeight: '200px',
+                    overflowY: 'auto',
+                    alignItems: (editExistingImages.length > 0 || editImagePreviews.length > 0) ? 'flex-start' : 'center'
+                  }} 
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={(e) => {
                     e.preventDefault();
@@ -965,22 +977,14 @@ export default function Wishlist({ user, partners, wishlistItems, setWishlistIte
                   />
                 </div>
 
-                <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+                <div style={{ display: 'flex', marginTop: '8px' }}>
                   <button 
                     type="submit"
                     className="btn-primary"
-                    style={{ padding: '12px', fontSize: '0.95rem', flex: 1, justifyContent: 'center' }}
+                    style={{ padding: '12px', fontSize: '0.95rem', width: '100%', justifyContent: 'center' }}
                     disabled={loading}
                   >
                     {loading ? 'Saving...' : 'Save Changes'}
-                  </button>
-                  <button 
-                    type="button"
-                    onClick={() => { setSelectedWishItemId(null); setIsEditing(false); }}
-                    className="btn-secondary"
-                    style={{ padding: '12px', fontSize: '0.95rem', flex: 1, justifyContent: 'center' }}
-                  >
-                    Cancel
                   </button>
                 </div>
               </form>

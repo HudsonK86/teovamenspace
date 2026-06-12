@@ -355,7 +355,13 @@ export default function Memories({ user, partners = [], memories, setMemories, t
               
               {/* Drag & Drop Image Uploader */}
               <div 
-                style={styles.uploadArea} 
+                style={{
+                  ...styles.uploadArea,
+                  height: imagePreviews.length > 0 ? 'auto' : '180px',
+                  maxHeight: '200px',
+                  overflowY: 'auto',
+                  alignItems: imagePreviews.length > 0 ? 'flex-start' : 'center'
+                }} 
                 onDragOver={handleDragOver}
                 onDrop={handleDrop}
                 onClick={() => {
@@ -471,7 +477,13 @@ export default function Memories({ user, partners = [], memories, setMemories, t
               
               {/* Drag & Drop Image Uploader */}
               <div 
-                style={styles.uploadArea} 
+                style={{
+                  ...styles.uploadArea,
+                  height: (editExistingImages.length > 0 || editImagePreviews.length > 0) ? 'auto' : '180px',
+                  maxHeight: '200px',
+                  overflowY: 'auto',
+                  alignItems: (editExistingImages.length > 0 || editImagePreviews.length > 0) ? 'flex-start' : 'center'
+                }} 
                 onDragOver={handleEditDragOver}
                 onDrop={handleEditDrop}
                 onClick={() => {

@@ -35,10 +35,13 @@ export default function Dashboard({ user, partners, memories, events, wishlistIt
   const [isEditingDate, setIsEditingDate] = useState(false);
   const [editDateValue, setEditDateValue] = useState('');
   const [isEditingPhotos, setIsEditingPhotos] = useState(false);
-  const [selectedPhotoIndices, setSelectedPhotoIndices] = useState([]);
+  const [editPhotos, setEditPhotos] = useState([]);
+  const [newFiles, setNewFiles] = useState([]);
+  const [newPreviews, setNewPreviews] = useState([]);
   const [draggedPhotoIdx, setDraggedPhotoIdx] = useState(null);
-  const [editedPhotos, setEditedPhotos] = useState([]);
+  
   const fileInputRef = useRef(null);
+  const editFileInputRef = useRef(null);
 
   const partner = partners.find(p => p.id !== user?.id);
 
@@ -79,54 +82,98 @@ export default function Dashboard({ user, partners, memories, events, wishlistIt
     }
   };
 
-  const handlePhotoDelete = async (photoUrl) => {
-    if (!confirm('Are you sure you want to delete this photo?')) return;
+  const handleOpenEditPhotos = () => {
+    setEditPhotos(photos);
+    setNewFiles([]);
+    setNewPreviews([]);
+    setIsEditingPhotos(true);
+  };
+
+  const handleEditPhotoChange = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length > 0) {
+      setNewFiles(prev => [...prev, ...files]);
+      files.forEach(file => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setNewPreviews(prev => [...prev, reader.result]);
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+  };
+
+  const removeSelectedEditPhoto = (index) => {
+    setNewFiles(prev => prev.filter((_, i) => i !== index));
+    setNewPreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const removeExistingEditPhoto = (photoUrl) => {
+    setEditPhotos(prev => prev.filter(pic => pic !== photoUrl));
+  };
+
+  const moveEditPhotoUp = (idx) => {
+    if (idx === 0) return;
+    const newPhotos = [...editPhotos];
+    [newPhotos[idx - 1], newPhotos[idx]] = [newPhotos[idx], newPhotos[idx - 1]];
+    setEditPhotos(newPhotos);
+  };
+
+  const moveEditPhotoDown = (idx) => {
+    if (idx === editPhotos.length - 1) return;
+    const newPhotos = [...editPhotos];
+    [newPhotos[idx], newPhotos[idx + 1]] = [newPhotos[idx + 1], newPhotos[idx]];
+    setEditPhotos(newPhotos);
+  };
+
+  const handleSavePhotos = async (e) => {
+    e.preventDefault();
+    setLoading(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/couple/pictures`, {
-        method: 'DELETE',
+      let finalPictures = [...editPhotos];
+
+      // 1. If there are new files, upload them first
+      if (newFiles.length > 0) {
+        const formData = new FormData();
+        newFiles.forEach(file => {
+          formData.append('images', file);
+        });
+
+        const uploadRes = await fetch(`${API_BASE_URL}/api/couple/pictures`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          body: formData
+        });
+
+        const uploadData = await uploadRes.json();
+        if (!uploadRes.ok) throw new Error(uploadData.error || 'Failed to upload new photos');
+        
+        const newUrls = uploadData.pictures.slice(uploadData.pictures.length - newFiles.length);
+        finalPictures = [...finalPictures, ...newUrls];
+      }
+
+      // 2. Persist the final list to the server
+      const updateRes = await fetch(`${API_BASE_URL}/api/couple/pictures`, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ url: photoUrl })
+        body: JSON.stringify({ pictures: finalPictures })
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to delete photo');
-      setCoupleSettings(data);
-      setActivePhotoIdx(prev => Math.max(0, Math.min(prev, data.pictures.length - 1)));
-    } catch (err) {
-      alert(err.message);
-    }
-  };
 
-  const handleDeleteSelectedPhotos = async () => {
-    if (selectedPhotoIndices.length === 0) {
-      alert('Select photos to delete');
-      return;
-    }
-    if (!confirm(`Delete ${selectedPhotoIndices.length} photo(s)?`)) return;
+      const updateData = await updateRes.json();
+      if (!updateRes.ok) throw new Error(updateData.error || 'Failed to save photos layout');
 
-    try {
-      const photosToDelete = selectedPhotoIndices.map(idx => photos[idx]);
-      for (const photoUrl of photosToDelete) {
-        await fetch(`${API_BASE_URL}/api/couple/pictures`, {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({ url: photoUrl })
-        });
-      }
-      const res = await fetch(`${API_BASE_URL}/api/couple`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
-      setCoupleSettings(data);
-      setSelectedPhotoIndices([]);
+      setCoupleSettings(updateData);
       setActivePhotoIdx(0);
+      setIsEditingPhotos(false);
     } catch (err) {
       alert(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -144,36 +191,13 @@ export default function Dashboard({ user, partners, memories, events, wishlistIt
       return;
     }
 
-    const newPhotos = [...photos];
+    const newPhotos = [...editPhotos];
     const draggedPhoto = newPhotos[draggedPhotoIdx];
     newPhotos.splice(draggedPhotoIdx, 1);
     newPhotos.splice(targetIdx, 0, draggedPhoto);
 
-    setCoupleSettings(prev => ({
-      ...prev,
-      pictures: newPhotos
-    }));
+    setEditPhotos(newPhotos);
     setDraggedPhotoIdx(null);
-  };
-
-  const movePhotoUp = (idx) => {
-    if (idx === 0) return;
-    const newPhotos = [...photos];
-    [newPhotos[idx - 1], newPhotos[idx]] = [newPhotos[idx], newPhotos[idx - 1]];
-    setCoupleSettings(prev => ({
-      ...prev,
-      pictures: newPhotos
-    }));
-  };
-
-  const movePhotoDown = (idx) => {
-    if (idx === photos.length - 1) return;
-    const newPhotos = [...photos];
-    [newPhotos[idx], newPhotos[idx + 1]] = [newPhotos[idx + 1], newPhotos[idx]];
-    setCoupleSettings(prev => ({
-      ...prev,
-      pictures: newPhotos
-    }));
   };
 
   const handleSaveDate = async () => {
@@ -292,7 +316,7 @@ export default function Dashboard({ user, partners, memories, events, wishlistIt
                 Our Moments
               </h3>
               <button
-                onClick={() => setIsEditingPhotos(!isEditingPhotos)}
+                onClick={handleOpenEditPhotos}
                 style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--primary)', fontSize: '0.9rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}
                 title="Edit photos"
               >
@@ -540,7 +564,18 @@ export default function Dashboard({ user, partners, memories, events, wishlistIt
       {/* Edit Our Moments Modal */}
       {isEditingPhotos && (
         <div className="modal-overlay">
-          <div className="glass-panel modal-content" style={{ position: 'relative', maxWidth: '550px' }}>
+          <div 
+            className="glass-panel modal-content" 
+            style={{ 
+              position: 'relative', 
+              maxWidth: '550px',
+              width: '95%',
+              padding: '24px',
+              borderRadius: '24px',
+              maxHeight: '90vh',
+              overflowY: 'auto'
+            }}
+          >
             <button
               onClick={() => setIsEditingPhotos(false)}
               style={styles.closeBtn}
@@ -552,12 +587,22 @@ export default function Dashboard({ user, partners, memories, events, wishlistIt
               Edit Our Moments
             </h3>
 
-            {photos.length > 0 ? (
-              <form style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {photos.length > 0 || newPreviews.length > 0 ? (
+              <form onSubmit={handleSavePhotos} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <input 
+                  type="file" 
+                  ref={editFileInputRef} 
+                  style={{ display: 'none' }} 
+                  onChange={handleEditPhotoChange} 
+                  accept="image/*" 
+                  multiple
+                />
+                
                 {/* Photo Thumbnails Grid */}
                 <div style={styles.uploadArea}>
                   <div className="previews-wrapper" onClick={(e) => e.stopPropagation()}>
-                    {photos.map((photoUrl, idx) => {
+                    {/* Existing database images */}
+                    {editPhotos.map((photoUrl, idx) => {
                       const fullUrl = photoUrl.startsWith('/uploads/') ? `${API_BASE_URL}${photoUrl}` : photoUrl;
                       return (
                         <div
@@ -570,23 +615,18 @@ export default function Dashboard({ user, partners, memories, events, wishlistIt
                           style={{ opacity: draggedPhotoIdx === idx ? 0.5 : 1, position: 'relative' }}
                         >
                           <img src={fullUrl} alt={`Photo ${idx + 1}`} className="thumbnail-image" />
-                          <input
-                            type="checkbox"
-                            checked={selectedPhotoIndices.includes(idx)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedPhotoIndices(prev => [...prev, idx]);
-                              } else {
-                                setSelectedPhotoIndices(prev => prev.filter(i => i !== idx));
-                              }
-                            }}
-                            style={styles.thumbnailCheckbox}
-                            title="Select for deletion"
-                          />
+                          <button
+                            type="button"
+                            onClick={() => removeExistingEditPhoto(photoUrl)}
+                            className="remove-thumbnail-btn"
+                            title="Remove Photo"
+                          >
+                            <X size={10} />
+                          </button>
                           <div style={styles.mobileArrowButtons}>
                             <button
                               type="button"
-                              onClick={() => movePhotoUp(idx)}
+                              onClick={() => moveEditPhotoUp(idx)}
                               disabled={idx === 0}
                               style={{ ...styles.arrowBtn, opacity: idx === 0 ? 0.3 : 1 }}
                               title="Move up"
@@ -595,9 +635,9 @@ export default function Dashboard({ user, partners, memories, events, wishlistIt
                             </button>
                             <button
                               type="button"
-                              onClick={() => movePhotoDown(idx)}
-                              disabled={idx === photos.length - 1}
-                              style={{ ...styles.arrowBtn, opacity: idx === photos.length - 1 ? 0.3 : 1 }}
+                              onClick={() => moveEditPhotoDown(idx)}
+                              disabled={idx === editPhotos.length - 1}
+                              style={{ ...styles.arrowBtn, opacity: idx === editPhotos.length - 1 ? 0.3 : 1 }}
                               title="Move down"
                             >
                               <ChevronDown size={14} />
@@ -606,31 +646,37 @@ export default function Dashboard({ user, partners, memories, events, wishlistIt
                         </div>
                       );
                     })}
-                    <div className="add-more-thumbnail" onClick={() => fileInputRef.current.click()}>
+
+                    {/* Newly selected image previews */}
+                    {newPreviews.map((preview, idx) => (
+                      <div key={idx} className="thumbnail-container" style={{ position: 'relative' }}>
+                        <img src={preview} alt={`Selected ${idx + 1}`} className="thumbnail-image" />
+                        <button
+                          type="button"
+                          onClick={() => removeSelectedEditPhoto(idx)}
+                          className="remove-thumbnail-btn"
+                          title="Remove Photo"
+                        >
+                          <X size={10} />
+                        </button>
+                      </div>
+                    ))}
+
+                    <div className="add-more-thumbnail" onClick={() => editFileInputRef.current?.click()}>
                       <Plus size={18} />
                       <span style={{ fontSize: '0.7rem', fontWeight: '700' }}>Add More</span>
                     </div>
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: '8px' }}>
+                <div style={{ display: 'flex', marginTop: '8px' }}>
                   <button
-                    type="button"
+                    type="submit"
                     className="btn-primary"
-                    onClick={handleDeleteSelectedPhotos}
-                    disabled={selectedPhotoIndices.length === 0}
-                    style={{ flex: 1, opacity: selectedPhotoIndices.length === 0 ? 0.5 : 1 }}
+                    style={{ padding: '12px', fontSize: '0.95rem', width: '100%', justifyContent: 'center' }}
+                    disabled={loading}
                   >
-                    <Trash2 size={16} />
-                    Delete Selected
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-secondary"
-                    onClick={() => setIsEditingPhotos(false)}
-                    style={{ flex: 1 }}
-                  >
-                    Done
+                    {loading ? 'Saving...' : 'Save Changes'}
                   </button>
                 </div>
               </form>
@@ -640,7 +686,7 @@ export default function Dashboard({ user, partners, memories, events, wishlistIt
                 <button
                   type="button"
                   className="btn-primary"
-                  onClick={() => fileInputRef.current.click()}
+                  onClick={() => editFileInputRef.current?.click()}
                   style={{ marginTop: '16px' }}
                 >
                   <Plus size={16} />
@@ -1125,6 +1171,8 @@ const styles = {
     borderRadius: '12px',
     padding: '12px',
     minHeight: 'auto',
+    maxHeight: '200px',
+    overflowY: 'auto',
   },
   thumbnailCheckbox: {
     position: 'absolute',
