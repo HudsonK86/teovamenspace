@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Heart, Sparkles, BookOpen, Gift, Calendar, CheckSquare, MessageCircleHeart, Plus, Trash2, Edit3, Save, X, ChevronUp, ChevronDown } from 'lucide-react';
+import { Heart, Sparkles, BookOpen, Gift, Calendar, CheckSquare, MessageCircleHeart, Plus, Trash2, Edit3, Save, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { API_BASE_URL } from '../config.js';
 
 const ROMANTIC_QUOTES = [
@@ -630,18 +630,18 @@ export default function Dashboard({ user, partners, memories, events, wishlistIt
                               onClick={() => moveEditPhotoUp(idx)}
                               disabled={idx === 0}
                               style={{ ...styles.arrowBtn, opacity: idx === 0 ? 0.3 : 1 }}
-                              title="Move up"
+                              title="Move left"
                             >
-                              <ChevronUp size={14} />
+                              <ChevronLeft size={14} />
                             </button>
                             <button
                               type="button"
                               onClick={() => moveEditPhotoDown(idx)}
                               disabled={idx === editPhotos.length - 1}
                               style={{ ...styles.arrowBtn, opacity: idx === editPhotos.length - 1 ? 0.3 : 1 }}
-                              title="Move down"
+                              title="Move right"
                             >
-                              <ChevronDown size={14} />
+                              <ChevronRight size={14} />
                             </button>
                           </div>
                         </div>

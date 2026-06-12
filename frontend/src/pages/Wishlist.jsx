@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Plus, X, Camera, Gift, ExternalLink, CheckCircle, Trash2, Heart, AlertCircle, Edit, ChevronUp, ChevronDown } from 'lucide-react';
+import { Plus, X, Camera, Gift, ExternalLink, CheckCircle, Trash2, Heart, AlertCircle, Edit, ChevronLeft, ChevronRight } from 'lucide-react';
 import { API_BASE_URL } from '../config.js';
 const getCurrencySymbol = (currency) => {
   switch (currency) {
@@ -948,18 +948,18 @@ export default function Wishlist({ user, partners, wishlistItems, setWishlistIte
                                 onClick={() => moveEditImageUp(idx, true)}
                                 disabled={idx === 0}
                                 style={{ ...styles.arrowBtn, opacity: idx === 0 ? 0.3 : 1 }}
-                                title="Move up"
+                                title="Move left"
                               >
-                                <ChevronUp size={14} />
+                                <ChevronLeft size={14} />
                               </button>
                               <button
                                 type="button"
                                 onClick={() => moveEditImageDown(idx, true)}
                                 disabled={idx === editExistingImages.length - 1}
                                 style={{ ...styles.arrowBtn, opacity: idx === editExistingImages.length - 1 ? 0.3 : 1 }}
-                                title="Move down"
+                                title="Move right"
                               >
-                                <ChevronDown size={14} />
+                                <ChevronRight size={14} />
                               </button>
                             </div>
                           </div>
@@ -992,18 +992,18 @@ export default function Wishlist({ user, partners, wishlistItems, setWishlistIte
                               onClick={() => moveEditImageUp(index, false)}
                               disabled={index === 0}
                               style={{ ...styles.arrowBtn, opacity: index === 0 ? 0.3 : 1 }}
-                              title="Move up"
+                              title="Move left"
                             >
-                              <ChevronUp size={14} />
+                              <ChevronLeft size={14} />
                             </button>
                             <button
                               type="button"
                               onClick={() => moveEditImageDown(index, false)}
                               disabled={index === editImagePreviews.length - 1}
                               style={{ ...styles.arrowBtn, opacity: index === editImagePreviews.length - 1 ? 0.3 : 1 }}
-                              title="Move down"
+                              title="Move right"
                             >
-                              <ChevronDown size={14} />
+                              <ChevronRight size={14} />
                             </button>
                           </div>
                         </div>
