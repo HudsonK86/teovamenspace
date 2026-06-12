@@ -1,71 +1,118 @@
-# 💖 Couples' Memory & Planning Platform
+# 💖 Couples' Shared Space
 
-A private, beautiful, and premium space shared by exactly two partners to capture memories, coordinate plans, and organize wishlists.
-
----
-
-## 🚀 Features
-
-*   **🔒 Exclusivity & Private Auth**: Restricted to exactly two registered partners using whitelisted email checks (Google Auth & Developer Mock Login).
-*   **📸 Shared Memories Diary**: Create beautiful diary entries with descriptions, dates, and multiple photo uploads.
-*   **📅 Event & Checklist Planner**: Track anniversaries, dates, and trips with nested checklists and partner tasks assignment.
-*   **🎁 Shared Gift Wishlist**: A gift registry to track desired items, prices, shopping links, priority levels, and purchase state.
-*   **⚙️ Couple Settings**: Customize anniversary dates, couple pictures, and categories.
+A private, premium, and secure web application designed exclusively for exactly two partners to capture memories, coordinate dates, log tastes/preferences, and organize wishlists in a beautiful, shared digital sanctuary.
 
 ---
 
-## 🛠️ Tech Stack
+## 🎨 Modules & Features
 
-*   **Frontend**: React (Vite), CSS3, Lucide Icons
-*   **Backend**: Node.js, Express.js
-*   **Database & ORM**: PostgreSQL, Prisma
-*   **Storage**: Local storage fallback with support for AWS S3 integration
+### 1. 📊 Interactive Dashboard
+*   **Anniversary Counter**: Dynamically counts the years, months, and days you have been together.
+*   **Recent Activity**: Quick access to recent memories and upcoming events.
+*   **Couple Customization**: Ability to customize the anniversary start date and set a shared cover photo.
+
+### 2. 📸 Shared Memory Diary
+*   **Timeline View**: A chronological flow of memories with dates, titles, and stories.
+*   **Multi-Image Uploads**: Upload multiple photos per memory, saved directly to local storage.
+*   **Media Gallery**: View high-quality images of your memories in a responsive lightbox format.
+
+### 3. 📅 Date & Event Planner
+*   **Trip/Date Coordination**: Plan trips, dates, and anniversaries with custom descriptions and dates.
+*   **Interactive Checklists**: Assign checklists to individual events to stay organized.
+*   **Partner Assignment**: Allocate specific checklist tasks to a partner (e.g. BF or GF) with quick status checks.
+
+### 4. 🎁 Gift & Wishlist Registry
+*   **Wishlist Registry**: Catalog gift ideas with item descriptions, prices, links, priority rating, and multiple pictures.
+*   **Gift Purchase Tracking**: Secrets feature that lets one partner mark an item as purchased (for surprises) or transparently coordinate gift buying.
+
+### 5. ☕ Taste & Details (Preferences)
+*   **Profile Personalization**: Update custom display names and upload custom profile pictures.
+*   **Taste Library**: Organize sizes, favorite foods, coffee configurations, and other special notes under organized tabs (General Info, Food & Drinks, Clothing & Sizes, Joy & Comfort).
 
 ---
 
-## ⚙️ Local Development Setup
+## 🛠️ Technology Stack
+
+*   **Frontend**: React (Vite), Vanilla CSS3 (custom theme engine), Lucide React Icons.
+*   **Backend**: Node.js (Express), ES Modules architecture.
+*   **Database & ORM**: PostgreSQL, Prisma.
+*   **File Storage**: Local filesystem storage (no external cloud dependencies required).
+*   **Security & Networking**: Rate limiting configurations, CORS protection, Helmet header configurations, and JWT cookie authentication.
+
+---
+
+## 📂 Project Structure
+
+```
+├── backend/
+│   ├── prisma/             # Prisma database schema configuration
+│   ├── src/
+│   │   ├── middleware/     # JWT authentication and rate limiting middlewares
+│   │   ├── routes/         # Express API routes (auth, preferences, wishlist, memories, etc.)
+│   │   └── server.js       # Main server entrypoint
+│   └── uploads/            # Local directory where uploaded pictures are saved
+└── frontend/
+    ├── public/             # Static public assets
+    ├── src/
+    │   ├── components/     # Reusable layout UI components (Navbar, Loader, etc.)
+    │   ├── pages/          # Main application page components (Dashboard, Memories, etc.)
+    │   ├── config.js       # Dynamic API URL routing logic
+    │   └── main.jsx        # App mounting and global error logger
+```
+
+---
+
+## ⚙️ Development & Local Setup
 
 ### 1. Database Setup
-Make sure PostgreSQL is running on your system, and create a database named `kuteovapemen`.
+Make sure PostgreSQL is installed and running locally, then create a new blank database:
+```sql
+CREATE DATABASE kuteovapemen;
+```
 
-### 2. Backend Configurations
-Navigate to the `backend` folder:
+### 2. Configure Backend
+Navigate to the `backend` directory, install packages, and create your environment file:
 ```bash
 cd backend
 npm install
+cp .env.example .env
 ```
 
-Create a `.env` file based on `.env.example`:
-```ini
-PORT=5001
-DATABASE_URL="postgresql://USERNAME:PASSWORD@localhost:5432/kuteovapemen?schema=public"
-JWT_SECRET="your-secure-dev-key"
-GOOGLE_CLIENT_ID="your-google-oauth-client-id"
-ALLOWED_EMAILS="partner1@gmail.com,partner2@gmail.com"
-```
+Set the values in `backend/.env`:
+*   `PORT`: Port for the API server (default is `5001`).
+*   `DATABASE_URL`: PostgreSQL connection string.
+*   `JWT_SECRET`: Secure string for signing JWT tokens.
+*   `GOOGLE_CLIENT_ID`: Your Google OAuth 2.0 Web Client ID.
+*   `ALLOWED_EMAILS`: Comma-separated list of the exactly two emails allowed to access this app.
+*   `HUDSON_EMAIL`: Whitelisted email assigned to the Boyfriend role.
 
-Apply database migrations and generate the Prisma client:
+Sync the database schema and start the API server:
 ```bash
+# Apply Prisma schema to PostgreSQL
 npx prisma db push
-```
 
-Start the backend:
-```bash
+# Start server in development mode
 npm run dev
 ```
 
-### 3. Frontend Configurations
-Navigate to the `frontend` folder:
+### 3. Configure Frontend
+Navigate to the `frontend` directory, install dependencies, and start the development server:
 ```bash
 cd ../frontend
 npm install
 npm run dev
 ```
-
-The frontend will run on [http://localhost:5173](http://localhost:5173) and route requests dynamically to the backend API on port 5001.
+Open `http://localhost:5173` in your browser. The frontend will dynamically communicate with the backend API running on `http://localhost:5001`.
 
 ---
 
-## 📦 Production Deployment
+## 📦 Production Architecture (Self-Hosted)
 
-For step-by-step instructions on deploying the frontend static builds (via Nginx reverse proxy), backend API (via PM2), AWS RDS PostgreSQL databases, and AWS S3 buckets, please refer to the detailed [AWS Deployment Guide](AWS_DEPLOYMENT_GUIDE.md).
+For maximum privacy, this application is deployed using a self-hosted architecture without external SaaS dependencies:
+
+1.  **Node.js Process Manager (PM2)**: Runs the Express backend continuously in the background and restarts it automatically in case of crashes or system reboots.
+2.  **Reverse Proxy (Nginx)**: 
+    *   Serves the static, production-compiled React bundle (`frontend/dist/`) on HTTP/HTTPS.
+    *   Intercepts `/api` requests and forwards them to the Node service.
+    *   Serves client requests for files in the `/uploads/` directory directly from the server disk.
+3.  **Encrypted Tunnel (SSL/HTTPS)**: Secured using an automated TLS/SSL certificate (such as Let's Encrypt) to encrypt all shared data and media transfers.
