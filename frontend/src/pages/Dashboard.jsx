@@ -326,24 +326,6 @@ export default function Dashboard({ user, partners, memories, events, wishlistIt
                     />
                   </div>
                   
-                  {/* Overlay Controls */}
-                  <div style={styles.sliderOverlay} className="slider-overlay-hover">
-                    <button 
-                      style={styles.sliderActionBtn} 
-                      onClick={() => fileInputRef.current?.click()} 
-                      title="Upload Couple Photo"
-                    >
-                      <Plus size={16} />
-                    </button>
-                    <button 
-                      style={{ ...styles.sliderActionBtn, background: 'rgba(255, 77, 77, 0.9)' }} 
-                      onClick={() => handlePhotoDelete(photos[activePhotoIdx])} 
-                      title="Delete Photo"
-                    >
-                      <Trash2 size={16} color="white" />
-                    </button>
-                  </div>
-
                   {photos.length > 1 && (
                     <>
                       <button 
