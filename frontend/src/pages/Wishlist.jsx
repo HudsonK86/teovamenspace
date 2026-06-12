@@ -29,6 +29,23 @@ const formatPrice = (price, currency) => {
   }
 };
 
+const getPriorityLabel = (priority) => {
+  switch (priority) {
+    case 10: return 'Absolutely obsessed! 😍';
+    case 9: return 'Really want this! 🔥';
+    case 8: return 'Would love to have! 💖';
+    case 7: return 'Want it a lot! 🥰';
+    case 6: return 'Nice to have! 🙂';
+    case 5: return 'Regular want! Choice';
+    case 4: return 'Cute minor wish! 🌱';
+    case 3: return 'If it\'s on sale! 🏷️';
+    case 2: return 'Low priority! ☁️';
+    case 1:
+    default:
+      return 'Just an idea! 💡';
+  }
+};
+
 export default function Wishlist({ user, partners, wishlistItems, setWishlistItems, token }) {
   const [activeTab, setActiveTab] = useState('partner'); // 'partner' or 'mine'
   const [statusFilter, setStatusFilter] = useState('all'); // 'all', 'wished', 'purchased'
@@ -54,8 +71,12 @@ export default function Wishlist({ user, partners, wishlistItems, setWishlistIte
   const [editCurrency, setEditCurrency] = useState('');
   const [editPriority, setEditPriority] = useState(5);
   const [editUrl, setEditUrl] = useState('');
+  const [editExistingImages, setEditExistingImages] = useState([]);
+  const [editImageFiles, setEditImageFiles] = useState([]);
+  const [editImagePreviews, setEditImagePreviews] = useState([]);
 
   const fileInputRef = useRef(null);
+  const editFileInputRef = useRef(null);
   const partner = partners.find(p => p.id !== user?.id);
 
   const handleImageChange = (e) => {
@@ -182,6 +203,29 @@ export default function Wishlist({ user, partners, wishlistItems, setWishlistIte
     }
   };
 
+  const handleEditImageChange = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length > 0) {
+      setEditImageFiles(prev => [...prev, ...files]);
+      files.forEach(file => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setEditImagePreviews(prev => [...prev, reader.result]);
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+  };
+
+  const removeSelectedEditImage = (index) => {
+    setEditImageFiles(prev => prev.filter((_, i) => i !== index));
+    setEditImagePreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const removeExistingImage = (imageId) => {
+    setEditExistingImages(prev => prev.filter(img => img.id !== imageId));
+  };
+
   const startEditing = (item) => {
     setEditTitle(item.title);
     setEditDescription(item.description || '');
@@ -189,6 +233,9 @@ export default function Wishlist({ user, partners, wishlistItems, setWishlistIte
     setEditCurrency(item.currency || 'USD');
     setEditPriority(item.priority || 5);
     setEditUrl(item.url || '');
+    setEditExistingImages(item.images || []);
+    setEditImageFiles([]);
+    setEditImagePreviews([]);
     setIsEditing(true);
   };
 
@@ -200,20 +247,26 @@ export default function Wishlist({ user, partners, wishlistItems, setWishlistIte
 
     setLoading(true);
     try {
+      const formData = new FormData();
+      formData.append('title', editTitle);
+      formData.append('description', editDescription);
+      formData.append('price', editPrice);
+      formData.append('currency', editCurrency);
+      formData.append('priority', editPriority);
+      formData.append('url', editUrl);
+      formData.append('existingImageIds', JSON.stringify(editExistingImages.map(img => img.id)));
+      if (editImageFiles.length > 0) {
+        editImageFiles.forEach(file => {
+          formData.append('images', file);
+        });
+      }
+
       const res = await fetch(`${API_BASE_URL}/api/wishlist/${id}`, {
         method: 'PATCH',
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({
-          title: editTitle,
-          description: editDescription,
-          price: editPrice ? parseFloat(editPrice) : null,
-          currency: editCurrency,
-          priority: editPriority,
-          url: editUrl
-        })
+        body: formData
       });
 
       const data = await res.json();
@@ -589,18 +642,23 @@ export default function Wishlist({ user, partners, wishlistItems, setWishlistIte
                     </span>
                   )}
                   
-                  {/* Love Level (Hearts) */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', margin: '4px 0 8px 0' }}>
-                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '600' }}>
-                      Love Level:
-                    </span>
-                    <div style={{ display: 'flex', gap: '2px', fontSize: '0.85rem' }}>
-                      {Array.from({ length: 10 }).map((_, i) => (
-                        <span key={i} style={{ opacity: i < (item.priority || 5) ? 1 : 0.15 }}>
-                          ❤️
-                        </span>
-                      ))}
+                  {/* Love Level (Hearts & Description Label) */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', margin: '4px 0 8px 0' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '600' }}>
+                        Love Level:
+                      </span>
+                      <div style={{ display: 'flex', gap: '2px', fontSize: '0.85rem' }}>
+                        {Array.from({ length: 10 }).map((_, i) => (
+                          <span key={i} style={{ opacity: i < (item.priority || 5) ? 1 : 0.15 }}>
+                            ❤️
+                          </span>
+                        ))}
+                      </div>
                     </div>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--primary)', fontWeight: '600' }}>
+                      {item.priority || 5}/10 - {getPriorityLabel(item.priority || 5)}
+                    </span>
                   </div>
 
                   {item.description && (
@@ -632,7 +690,7 @@ export default function Wishlist({ user, partners, wishlistItems, setWishlistIte
                   )}
 
                   {/* Actions Area */}
-                  <div className="wish-actions">
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: 'auto', paddingTop: '15px' }}>
                     {/* Shopping URL */}
                     {item.url && (
                       <a 
@@ -641,57 +699,59 @@ export default function Wishlist({ user, partners, wishlistItems, setWishlistIte
                         rel="noopener noreferrer" 
                         className="btn-secondary"
                         onClick={(e) => e.stopPropagation()}
-                        style={{ padding: '8px 12px', fontSize: '0.85rem', flex: 1, justifyContent: 'center' }}
+                        style={{ padding: '8px 12px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'center', width: '100%' }}
                       >
                         <ExternalLink size={14} />
                         Buy Link
                       </a>
                     )}
 
-                    {/* Fulfill actions */}
-                    {activeTab === 'partner' ? (
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleMarkPurchased(item.id, item.isPurchased);
-                        }}
-                        className={item.isPurchased ? 'btn-secondary' : 'btn-primary'}
-                        style={{ padding: '8px 12px', fontSize: '0.85rem', flex: 1, justifyContent: 'center' }}
-                      >
-                        <CheckCircle size={14} />
-                        {item.isPurchased ? 'Mark Unbought' : 'Mark Purchased'}
-                      </button>
-                    ) : (
-                      !item.isPurchased && (
-                        <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              startEditing(item);
-                              setSelectedWishItemId(item.id);
-                            }}
-                            className="btn-secondary"
-                            style={{ padding: '8px 12px', fontSize: '0.85rem', flex: 1, justifyContent: 'center' }}
-                            title="Edit Wish"
-                          >
-                            <Edit size={14} />
-                            Edit
-                          </button>
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteWish(item.id);
-                            }}
-                            className="btn-secondary"
-                            style={{ padding: '8px 12px', fontSize: '0.85rem', color: 'var(--danger)', flex: 1, justifyContent: 'center' }}
-                            title="Delete Wish"
-                          >
-                            <Trash2 size={14} />
-                            Remove
-                          </button>
-                        </div>
-                      )
-                    )}
+                    {/* Secondary Actions */}
+                    <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
+                      {activeTab === 'partner' ? (
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleMarkPurchased(item.id, item.isPurchased);
+                          }}
+                          className={item.isPurchased ? 'btn-secondary' : 'btn-primary'}
+                          style={{ padding: '8px 12px', fontSize: '0.85rem', flex: 1, justifyContent: 'center' }}
+                        >
+                          <CheckCircle size={14} />
+                          {item.isPurchased ? 'Mark Unbought' : 'Mark Purchased'}
+                        </button>
+                      ) : (
+                        !item.isPurchased && (
+                          <>
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                startEditing(item);
+                                setSelectedWishItemId(item.id);
+                              }}
+                              className="btn-secondary"
+                              style={{ padding: '8px 12px', fontSize: '0.85rem', flex: 1, justifyContent: 'center' }}
+                              title="Edit Wish"
+                            >
+                              <Edit size={14} />
+                              Edit
+                            </button>
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteWish(item.id);
+                              }}
+                              className="btn-secondary"
+                              style={{ padding: '8px 12px', fontSize: '0.85rem', color: 'var(--danger)', flex: 1, justifyContent: 'center' }}
+                              title="Delete Wish"
+                            >
+                              <Trash2 size={14} />
+                              Remove
+                            </button>
+                          </>
+                        )
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -740,6 +800,87 @@ export default function Wishlist({ user, partners, wishlistItems, setWishlistIte
               </h3>
 
               <form onSubmit={(e) => { e.preventDefault(); handleUpdateWish(item.id); }} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                
+                {/* Drag & Drop Image Uploader for Editing */}
+                <div 
+                  style={styles.uploadArea} 
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    const files = Array.from(e.dataTransfer.files).filter(file => file.type.startsWith('image/'));
+                    if (files.length > 0) {
+                      setEditImageFiles(prev => [...prev, ...files]);
+                      files.forEach(file => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          setEditImagePreviews(prev => [...prev, reader.result]);
+                        };
+                        reader.readAsDataURL(file);
+                      });
+                    }
+                  }}
+                  onClick={() => {
+                    if (editExistingImages.length === 0 && editImagePreviews.length === 0) {
+                      editFileInputRef.current.click();
+                    }
+                  }}
+                >
+                  <input 
+                    type="file" 
+                    ref={editFileInputRef} 
+                    style={{ display: 'none' }} 
+                    onChange={handleEditImageChange}
+                    accept="image/*"
+                    multiple
+                  />
+                  {editExistingImages.length > 0 || editImagePreviews.length > 0 ? (
+                    <div className="previews-wrapper" onClick={(e) => e.stopPropagation()}>
+                      {/* Existing database images */}
+                      {editExistingImages.map((img) => {
+                        const fullUrl = img.url.startsWith('/uploads/') ? `${API_BASE_URL}${img.url}` : img.url;
+                        return (
+                          <div key={img.id} className="thumbnail-container">
+                            <img src={fullUrl} alt="Existing" className="thumbnail-image" />
+                            <button
+                              type="button"
+                              onClick={() => removeExistingImage(img.id)}
+                              className="remove-thumbnail-btn"
+                              title="Remove Photo"
+                            >
+                              <X size={10} />
+                            </button>
+                          </div>
+                        );
+                      })}
+
+                      {/* Newly selected image previews */}
+                      {editImagePreviews.map((preview, index) => (
+                        <div key={index} className="thumbnail-container">
+                          <img src={preview} alt={`Selected ${index + 1}`} className="thumbnail-image" />
+                          <button
+                            type="button"
+                            onClick={() => removeSelectedEditImage(index)}
+                            className="remove-thumbnail-btn"
+                            title="Remove Photo"
+                          >
+                            <X size={10} />
+                          </button>
+                        </div>
+                      ))}
+                      <div className="add-more-thumbnail" onClick={() => editFileInputRef.current.click()}>
+                        <Plus size={18} />
+                        <span style={{ fontSize: '0.7rem', fontWeight: '700' }}>Add More</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={styles.uploadPrompt}>
+                      <Camera size={28} color="var(--text-muted)" style={{ marginBottom: '8px' }} />
+                      <p style={{ fontWeight: '600', fontSize: '0.9rem' }}>Drag & drop photos here</p>
+                      <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>or click to browse (multiple allowed)</p>
+                    </div>
+                  )}
+                </div>
+
                 <div className="form-group">
                   <label>Gift Item Name</label>
                   <input 

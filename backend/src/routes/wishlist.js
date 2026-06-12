@@ -147,8 +147,8 @@ router.post('/', authenticateToken, upload.array('images', 10), async (req, res)
   }
 });
 
-// PATCH a wishlist item (e.g. mark as purchased)
-router.patch('/:id', authenticateToken, async (req, res) => {
+// PATCH a wishlist item (e.g. mark as purchased or edit details)
+router.patch('/:id', authenticateToken, upload.array('images', 10), async (req, res) => {
   const { id } = req.params;
   const { isPurchased, title, description, price, url, currency, priority } = req.body;
   const userId = req.user.id;
@@ -156,6 +156,7 @@ router.patch('/:id', authenticateToken, async (req, res) => {
   try {
     const item = await prisma.wishlistItem.findUnique({
       where: { id },
+      include: { images: true }
     });
 
     if (!item) {
@@ -170,22 +171,88 @@ router.patch('/:id', authenticateToken, async (req, res) => {
       }
     }
 
+    // Parse existingImageIds that the client wants to keep
+    let existingImageIds = null;
+    if (req.body.existingImageIds !== undefined) {
+      try {
+        existingImageIds = JSON.parse(req.body.existingImageIds);
+      } catch (e) {
+        if (Array.isArray(req.body.existingImageIds)) {
+          existingImageIds = req.body.existingImageIds;
+        } else {
+          existingImageIds = [req.body.existingImageIds];
+        }
+      }
+    }
+
+    // Determine images to delete if existingImageIds is provided
+    if (existingImageIds !== null) {
+      const imagesToDelete = item.images.filter(img => !existingImageIds.includes(img.id));
+
+      if (imagesToDelete.length > 0) {
+        await prisma.wishlistImage.deleteMany({
+          where: {
+            id: { in: imagesToDelete.map(img => img.id) }
+          }
+        });
+
+        for (const img of imagesToDelete) {
+          if (img.url && img.url.startsWith('/uploads/')) {
+            const localFilePath = path.join('.', img.url);
+            if (fs.existsSync(localFilePath)) {
+              fs.unlinkSync(localFilePath);
+            }
+          }
+        }
+      }
+    }
+
+    // Handle new file uploads
+    const uploadedUrls = [];
+    if (req.files && req.files.length > 0) {
+      for (const file of req.files) {
+        const url = await handleFileUpload(file);
+        uploadedUrls.push(url);
+      }
+    }
+
+    // Calculate new imageUrl
+    const remainingImages = existingImageIds !== null
+      ? item.images.filter(img => existingImageIds.includes(img.id))
+      : item.images;
+    const allImagesAfterUpdate = [
+      ...remainingImages.map(img => img.url),
+      ...uploadedUrls
+    ];
+    const firstImageUrl = allImagesAfterUpdate.length > 0 ? allImagesAfterUpdate[0] : null;
+
     const updateData = {};
 
     // If marking as purchased
     if (isPurchased !== undefined) {
-      updateData.isPurchased = isPurchased;
-      updateData.boughtById = isPurchased ? userId : null;
+      const isPurchasedBool = isPurchased === 'true' || isPurchased === true;
+      updateData.isPurchased = isPurchasedBool;
+      updateData.boughtById = isPurchasedBool ? userId : null;
     }
 
     // Owner can edit other details
     if (item.ownerId === userId) {
       if (title !== undefined) updateData.title = title;
       if (description !== undefined) updateData.description = description;
-      if (price !== undefined) updateData.price = price ? parseFloat(price) : null;
+      if (price !== undefined) {
+        updateData.price = (price === '' || price === null || price === 'null') ? null : parseFloat(price);
+      }
       if (currency !== undefined) updateData.currency = currency;
-      if (priority !== undefined) updateData.priority = priority ? parseInt(priority) : 5;
+      if (priority !== undefined) {
+        updateData.priority = priority ? parseInt(priority) : 5;
+      }
       if (url !== undefined) updateData.url = url;
+
+      // Update imageUrl and images relation
+      updateData.imageUrl = firstImageUrl;
+      updateData.images = {
+        create: uploadedUrls.map(url => ({ url }))
+      };
     }
 
     const updatedItem = await prisma.wishlistItem.update({
