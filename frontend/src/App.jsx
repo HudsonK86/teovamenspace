@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Navbar from './components/Navbar.jsx';
 import Login from './pages/Login.jsx';
 import Dashboard from './pages/Dashboard.jsx';
@@ -7,7 +7,7 @@ import Preferences from './pages/Preferences.jsx';
 import Events from './pages/Events.jsx';
 import Wishlist from './pages/Wishlist.jsx';
 import { API_BASE_URL } from './config.js';
-import { Heart, CloudLightning } from 'lucide-react';
+import { Heart, CloudLightning, X } from 'lucide-react';
 import './App.css';
 
 export default function App() {
@@ -27,6 +27,51 @@ export default function App() {
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
   const [loading, setLoading] = useState(!!localStorage.getItem('token'));
   const [serverOffline, setServerOffline] = useState(false);
+
+  // Lightbox State
+  const [lightboxImages, setLightboxImages] = useState(null);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+  const touchStartX = useRef(0);
+  const touchEndX = useRef(0);
+
+  const openLightbox = (images, index = 0) => {
+    setLightboxImages(images);
+    setLightboxIndex(index);
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (!lightboxImages) return;
+      if (e.key === 'ArrowRight') {
+        setLightboxIndex(prev => (prev + 1) % lightboxImages.length);
+      } else if (e.key === 'ArrowLeft') {
+        setLightboxIndex(prev => (prev - 1 + lightboxImages.length) % lightboxImages.length);
+      } else if (e.key === 'Escape') {
+        setLightboxImages(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [lightboxImages]);
+
+  const handleTouchStart = (e) => {
+    touchStartX.current = e.changedTouches[0].screenX;
+  };
+
+  const handleTouchEnd = (e) => {
+    touchEndX.current = e.changedTouches[0].screenX;
+    handleSwipe();
+  };
+
+  const handleSwipe = () => {
+    const minSwipeDistance = 50;
+    const diff = touchStartX.current - touchEndX.current;
+    if (diff > minSwipeDistance) {
+      setLightboxIndex(prev => (prev + 1) % lightboxImages.length);
+    } else if (diff < -minSwipeDistance) {
+      setLightboxIndex(prev => (prev - 1 + lightboxImages.length) % lightboxImages.length);
+    }
+  };
 
   // Apply Theme
   useEffect(() => {
@@ -172,6 +217,7 @@ export default function App() {
             coupleSettings={coupleSettings}
             setCoupleSettings={setCoupleSettings}
             token={token}
+            openLightbox={openLightbox}
           />
         );
       case 'memories':
@@ -182,6 +228,7 @@ export default function App() {
             memories={memories} 
             setMemories={setMemories} 
             token={token} 
+            openLightbox={openLightbox}
           />
         );
       case 'preferences':
@@ -214,6 +261,7 @@ export default function App() {
             wishlistItems={wishlistItems} 
             setWishlistItems={setWishlistItems} 
             token={token} 
+            openLightbox={openLightbox}
           />
         );
       default:
@@ -235,6 +283,61 @@ export default function App() {
       <main className="main-content">
         {renderActivePage()}
       </main>
+
+      {/* Full screen Lightbox Viewer */}
+      {lightboxImages && (
+        <div 
+          className="lightbox-overlay"
+          onClick={() => setLightboxImages(null)}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          style={styles.lightboxOverlay}
+        >
+          <button 
+            style={styles.lightboxClose}
+            onClick={(e) => { e.stopPropagation(); setLightboxImages(null); }}
+            title="Close Viewer (Esc)"
+          >
+            <X size={24} color="white" />
+          </button>
+          
+          <div style={styles.lightboxContent} onClick={(e) => e.stopPropagation()}>
+            <img 
+              src={lightboxImages[lightboxIndex].startsWith('/uploads/') ? `${API_BASE_URL}${lightboxImages[lightboxIndex]}` : lightboxImages[lightboxIndex]}
+              alt=""
+              style={styles.lightboxImage}
+            />
+          </div>
+
+          {lightboxImages.length > 1 && (
+            <>
+              <button 
+                style={{ ...styles.lightboxNav, left: '20px' }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setLightboxIndex(prev => (prev - 1 + lightboxImages.length) % lightboxImages.length);
+                }}
+                title="Previous Image"
+              >
+                &lsaquo;
+              </button>
+              <button 
+                style={{ ...styles.lightboxNav, right: '20px' }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setLightboxIndex(prev => (prev + 1) % lightboxImages.length);
+                }}
+                title="Next Image"
+              >
+                &rsaquo;
+              </button>
+              <div style={styles.lightboxCounter}>
+                {lightboxIndex + 1} / {lightboxImages.length}
+              </div>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -270,5 +373,83 @@ const styles = {
     paddingLeft: '20px',
     lineHeight: '1.6',
     color: 'var(--text-main)',
+  },
+  lightboxOverlay: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: 'rgba(0, 0, 0, 0.93)',
+    backdropFilter: 'blur(8px)',
+    WebkitBackdropFilter: 'blur(8px)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 99999,
+    userSelect: 'none',
+  },
+  lightboxClose: {
+    position: 'absolute',
+    top: '20px',
+    right: '20px',
+    background: 'rgba(255, 255, 255, 0.1)',
+    border: 'none',
+    borderRadius: '50%',
+    width: '44px',
+    height: '44px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    zIndex: 100000,
+    transition: 'background 0.2s',
+  },
+  lightboxContent: {
+    position: 'relative',
+    maxWidth: '90%',
+    maxHeight: '85vh',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  lightboxImage: {
+    maxWidth: '100%',
+    maxHeight: '85vh',
+    objectFit: 'contain',
+    borderRadius: '8px',
+    boxShadow: '0 8px 30px rgba(0,0,0,0.5)',
+  },
+  lightboxNav: {
+    position: 'absolute',
+    top: '50%',
+    transform: 'translateY(-50%)',
+    background: 'rgba(255, 255, 255, 0.15)',
+    color: 'white',
+    border: 'none',
+    borderRadius: '50%',
+    width: '50px',
+    height: '50px',
+    fontSize: '2rem',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    transition: 'background 0.2s',
+    lineHeight: '0',
+    zIndex: 100000,
+  },
+  lightboxCounter: {
+    position: 'absolute',
+    bottom: '20px',
+    left: '50%',
+    transform: 'translateX(-50%)',
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: '0.95rem',
+    fontWeight: '700',
+    background: 'rgba(255, 255, 255, 0.1)',
+    padding: '6px 16px',
+    borderRadius: '20px',
+    backdropFilter: 'blur(4px)',
   },
 };

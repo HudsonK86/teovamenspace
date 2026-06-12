@@ -25,7 +25,7 @@ const ROMANTIC_QUOTES = [
   "If I had a flower for every time I thought of you... I could walk through my garden forever. — Alfred Tennyson"
 ];
 
-export default function Dashboard({ user, partners, memories, events, wishlistItems, setActivePage, coupleSettings, setCoupleSettings, token }) {
+export default function Dashboard({ user, partners, memories, events, wishlistItems, setActivePage, coupleSettings, setCoupleSettings, token, openLightbox }) {
   const [randomQuote, setRandomQuote] = useState('');
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0 });
   const [nextEvent, setNextEvent] = useState(null);
@@ -318,7 +318,10 @@ export default function Dashboard({ user, partners, memories, events, wishlistIt
                     alt="" 
                     style={styles.sliderBgBlur}
                   />
-                  <div style={styles.sliderImgContainer}>
+                  <div 
+                    style={{ ...styles.sliderImgContainer, cursor: 'pointer' }}
+                    onClick={() => openLightbox(photos, activePhotoIdx)}
+                  >
                     <img 
                       src={photos[activePhotoIdx].startsWith('/uploads/') ? `${API_BASE_URL}${photos[activePhotoIdx]}` : photos[activePhotoIdx]} 
                       alt="Our love memory" 

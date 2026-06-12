@@ -46,7 +46,7 @@ const getPriorityLabel = (priority) => {
   }
 };
 
-export default function Wishlist({ user, partners, wishlistItems, setWishlistItems, token }) {
+export default function Wishlist({ user, partners, wishlistItems, setWishlistItems, token, openLightbox }) {
   const [activeTab, setActiveTab] = useState('partner'); // 'partner' or 'mine'
   const [statusFilter, setStatusFilter] = useState('all'); // 'all', 'wished', 'purchased'
   const [showAddForm, setShowAddForm] = useState(false);
@@ -574,7 +574,11 @@ export default function Wishlist({ user, partners, wishlistItems, setWishlistIte
                 </span>
 
                 {/* Polaroid Photo Frame */}
-                <div className="wish-img-container">
+                <div 
+                  className="wish-img-container"
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => itemUrl && openLightbox(imagesList, activeIndex)}
+                >
                   {itemUrl ? (
                     <div className="carousel-container" style={{ width: '100%', height: '100%' }}>
                       <img src={itemUrl} alt={item.title} className="wish-img" />

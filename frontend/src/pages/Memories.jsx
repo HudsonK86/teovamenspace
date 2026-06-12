@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { Plus, X, Camera, Trash2, BookOpen, AlertCircle, Pencil, ChevronUp, ChevronDown } from 'lucide-react';
 import { API_BASE_URL } from '../config.js';
 
-export default function Memories({ user, partners = [], memories, setMemories, token }) {
+export default function Memories({ user, partners = [], memories, setMemories, token, openLightbox }) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -668,7 +668,11 @@ export default function Memories({ user, partners = [], memories, setMemories, t
                 
                 <div className="glass-panel memory-card" style={styles.memoryCard}>
                   {memoryFullUrl && (
-                    <div className="carousel-container">
+                    <div 
+                      className="carousel-container"
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => openLightbox(imagesList, activeIndex)}
+                    >
                       <img src={memoryFullUrl} alt={memory.title} className="memory-img" />
                       
                       {imagesList.length > 1 && (
