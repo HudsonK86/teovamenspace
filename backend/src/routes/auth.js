@@ -315,9 +315,11 @@ router.post(
     try {
       const avatarUrl = await handleAvatarUpload(req.file);
 
+      const targetUserId = req.body.targetUserId || req.user.id;
+
       // Update user in DB
       const updatedUser = await prisma.user.update({
-        where: { id: req.user.id },
+        where: { id: targetUserId },
         data: { avatar: avatarUrl },
       });
 
@@ -331,7 +333,8 @@ router.post(
 
 // PATCH /api/auth/profile (Update current user profile name)
 router.patch('/profile', authenticateToken, async (req, res) => {
-  const { name } = req.body;
+  const { name, targetUserId } = req.body;
+  const userId = targetUserId || req.user.id;
 
   if (!name || !name.trim()) {
     return res.status(400).json({ error: 'Name is required' });
@@ -339,7 +342,7 @@ router.patch('/profile', authenticateToken, async (req, res) => {
 
   try {
     const updatedUser = await prisma.user.update({
-      where: { id: req.user.id },
+      where: { id: userId },
       data: { name: name.trim() },
     });
 

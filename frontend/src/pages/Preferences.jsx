@@ -12,6 +12,10 @@ export default function Preferences({ user, setUser, partners, setPartners, pref
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const [targetUserId, setTargetUserId] = useState(user?.id || '');
+  const [activeAvatarUploadUserId, setActiveAvatarUploadUserId] = useState(null);
+  const [editingNameUserId, setEditingNameUserId] = useState(null);
+
   const [editingPref, setEditingPref] = useState(null);
   const [editCategory, setEditCategory] = useState(CATEGORIES[0]);
   const [editItem, setEditItem] = useState('');
@@ -22,10 +26,11 @@ export default function Preferences({ user, setUser, partners, setPartners, pref
 
   const handleAvatarChange = async (e) => {
     const file = e.target.files[0];
-    if (!file) return;
+    if (!file || !activeAvatarUploadUserId) return;
 
     const formData = new FormData();
     formData.append('avatar', file);
+    formData.append('targetUserId', activeAvatarUploadUserId);
 
     try {
       const res = await fetch(`${API_BASE_URL}/api/auth/avatar`, {
@@ -39,19 +44,28 @@ export default function Preferences({ user, setUser, partners, setPartners, pref
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to upload avatar');
 
-      setUser(data);
+      if (data.id === user?.id) {
+        setUser(data);
+      }
       setPartners(prev => prev.map(p => p.id === data.id ? data : p));
     } catch (err) {
       alert(err.message);
+    } finally {
+      setActiveAvatarUploadUserId(null);
     }
   };
 
-  const [isEditingName, setIsEditingName] = useState(false);
   const [newName, setNewName] = useState('');
 
-  const handleSaveName = async () => {
-    if (!newName || !newName.trim() || newName.trim() === user?.name) {
-      setIsEditingName(false);
+  const handleSaveName = async (targetId) => {
+    if (!newName || !newName.trim()) {
+      setEditingNameUserId(null);
+      return;
+    }
+
+    const currentName = targetId === user?.id ? user?.name : partner?.name;
+    if (newName.trim() === currentName) {
+      setEditingNameUserId(null);
       return;
     }
 
@@ -62,25 +76,27 @@ export default function Preferences({ user, setUser, partners, setPartners, pref
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ name: newName.trim() }),
+        body: JSON.stringify({ name: newName.trim(), targetUserId: targetId }),
       });
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to update name');
 
-      setUser(data);
+      if (data.id === user?.id) {
+        setUser(data);
+      }
       setPartners(prev => prev.map(p => p.id === data.id ? data : p));
-      setIsEditingName(false);
+      setEditingNameUserId(null);
     } catch (err) {
       alert(err.message);
     }
   };
 
-  const handleKeyDown = (e) => {
+  const handleKeyDown = (e, targetId) => {
     if (e.key === 'Enter') {
-      handleSaveName();
+      handleSaveName(targetId);
     } else if (e.key === 'Escape') {
-      setIsEditingName(false);
+      setEditingNameUserId(null);
     }
   };
 
@@ -108,7 +124,7 @@ export default function Preferences({ user, setUser, partners, setPartners, pref
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ category, item, value }),
+        body: JSON.stringify({ category, item, value, targetUserId }),
       });
 
       const data = await res.json();
@@ -204,7 +220,7 @@ export default function Preferences({ user, setUser, partners, setPartners, pref
           <h2 className="title-serif" style={styles.title}>our tastes & details</h2>
           <p style={styles.subtitle}>Keep track of sizes, coffee orders, and notes on what makes each other happy.</p>
         </div>
-        <button className="btn-primary" onClick={() => setShowAddForm(true)}>
+        <button className="btn-primary" onClick={() => { setShowAddForm(true); setTargetUserId(user?.id || ''); }}>
           <Plus size={18} />
           Add Preference
         </button>
@@ -222,12 +238,24 @@ export default function Preferences({ user, setUser, partners, setPartners, pref
             </button>
             <h3 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Heart size={20} fill="var(--primary)" color="var(--primary)" />
-              Add Detail About Yourself
+              Add Taste or Detail
             </h3>
             
             {error && <p style={{ color: 'var(--danger)', marginBottom: '12px', fontSize: '0.9rem' }}>{error}</p>}
 
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div className="form-group">
+                <label>Whose profile is this for?</label>
+                <select 
+                  className="form-select" 
+                  value={targetUserId} 
+                  onChange={e => setTargetUserId(e.target.value)}
+                >
+                  <option value={user?.id}>Me ({user?.name})</option>
+                  {partner && <option value={partner.id}>{partner.name} (Partner)</option>}
+                </select>
+              </div>
+
               <div className="form-group">
                 <label>Category</label>
                 <select 
@@ -345,7 +373,10 @@ export default function Preferences({ user, setUser, partners, setPartners, pref
             <div 
               className="avatar-container-hover"
               style={styles.avatarContainer} 
-              onClick={() => avatarInputRef.current?.click()}
+              onClick={() => {
+                setActiveAvatarUploadUserId(user?.id);
+                avatarInputRef.current?.click();
+              }}
               title="Click to change profile picture"
             >
               <img 
@@ -365,13 +396,13 @@ export default function Preferences({ user, setUser, partners, setPartners, pref
               onChange={handleAvatarChange} 
             />
             <div style={{ flex: 1 }}>
-              {isEditingName ? (
+              {editingNameUserId === user?.id ? (
                 <input 
                   type="text"
                   value={newName}
                   onChange={e => setNewName(e.target.value)}
-                  onBlur={handleSaveName}
-                  onKeyDown={handleKeyDown}
+                  onBlur={() => handleSaveName(user?.id)}
+                  onKeyDown={e => handleKeyDown(e, user?.id)}
                   className="form-input"
                   style={{ fontSize: '1.2rem', padding: '4px 8px', maxWidth: '200px' }}
                   autoFocus
@@ -379,7 +410,7 @@ export default function Preferences({ user, setUser, partners, setPartners, pref
               ) : (
                 <h3 
                   style={{ fontSize: '1.4rem', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
-                  onClick={() => { setIsEditingName(true); setNewName(user?.name || ''); }}
+                  onClick={() => { setEditingNameUserId(user?.id); setNewName(user?.name || ''); }}
                   title="Click to edit name"
                 >
                   {user?.name}
@@ -433,14 +464,46 @@ export default function Preferences({ user, setUser, partners, setPartners, pref
         {/* Partner Column */}
         <div className="partner-card" style={{ borderColor: 'rgba(176, 136, 255, 0.2)' }}>
           <div className="partner-header">
-            <img 
-              src={partner?.avatar ? (partner.avatar.startsWith('/uploads/') ? `${API_BASE_URL}${partner.avatar}` : partner.avatar) : 'https://api.dicebear.com/7.x/adventurer/svg?seed=Partner'} 
-              alt={partner?.name || 'Partner'} 
-              className="partner-avatar" 
-              style={{ borderColor: 'var(--secondary)' }}
-            />
+            <div 
+              className="avatar-container-hover"
+              style={styles.avatarContainer} 
+              onClick={() => {
+                setActiveAvatarUploadUserId(partner?.id);
+                avatarInputRef.current?.click();
+              }}
+              title="Click to change profile picture"
+            >
+              <img 
+                src={partner?.avatar ? (partner.avatar.startsWith('/uploads/') ? `${API_BASE_URL}${partner.avatar}` : partner.avatar) : 'https://api.dicebear.com/7.x/adventurer/svg?seed=Partner'} 
+                alt={partner?.name || 'Partner'} 
+                style={{ ...styles.clickableAvatar, borderColor: 'var(--secondary)' }}
+              />
+              <div style={styles.avatarOverlay} className="avatar-hover-overlay">
+                <span>Edit</span>
+              </div>
+            </div>
             <div>
-              <h3 style={{ fontSize: '1.4rem' }}>{partner?.name || "Girlfriend's Preferences"}</h3>
+              {editingNameUserId === partner?.id ? (
+                <input 
+                  type="text"
+                  value={newName}
+                  onChange={e => setNewName(e.target.value)}
+                  onBlur={() => handleSaveName(partner?.id)}
+                  onKeyDown={e => handleKeyDown(e, partner?.id)}
+                  className="form-input"
+                  style={{ fontSize: '1.2rem', padding: '4px 8px', maxWidth: '200px' }}
+                  autoFocus
+                />
+              ) : (
+                <h3 
+                  style={{ fontSize: '1.4rem', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+                  onClick={() => { setEditingNameUserId(partner?.id); setNewName(partner?.name || ''); }}
+                  title="Click to edit name"
+                >
+                  {partner?.name || "Girlfriend's Preferences"}
+                  <Edit3 size={14} style={{ opacity: 0.5 }} />
+                </h3>
+              )}
               <span style={{ fontSize: '0.8rem', fontWeight: '700', color: 'var(--secondary)', textTransform: 'uppercase' }}>Partner Profile</span>
             </div>
           </div>
@@ -457,6 +520,24 @@ export default function Preferences({ user, setUser, partners, setPartners, pref
                         <div>
                           <span className="pref-item-name">{pref.item}: </span>
                           <span className="pref-item-value">{pref.value}</span>
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <button 
+                            onClick={() => handleStartEditPref(pref)} 
+                            className="edit-btn"
+                            style={styles.editBtn}
+                            title="Edit Detail"
+                          >
+                            <Edit3 size={14} />
+                          </button>
+                          <button 
+                            onClick={() => handleDelete(pref.id)} 
+                            className="delete-btn"
+                            style={styles.deleteBtn}
+                            title="Delete Detail"
+                          >
+                            <Trash2 size={14} />
+                          </button>
                         </div>
                       </div>
                     ))

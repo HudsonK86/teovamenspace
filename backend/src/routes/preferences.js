@@ -18,14 +18,22 @@ router.get('/', authenticateToken, async (req, res) => {
 
 // Create or update a preference
 router.post('/', authenticateToken, async (req, res) => {
-  const { category, item, value } = req.body;
-  const userId = req.user.id;
+  const { category, item, value, targetUserId } = req.body;
+  const userId = targetUserId || req.user.id;
 
   if (!category || !item || !value) {
     return res.status(400).json({ error: 'category, item, and value are required' });
   }
 
   try {
+    // Validate targetUserId exists
+    const targetUser = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+    if (!targetUser) {
+      return res.status(404).json({ error: 'Target user not found' });
+    }
+
     // Check if the preference item already exists for this user in this category
     const existing = await prisma.preference.findFirst({
       where: {
@@ -64,7 +72,6 @@ router.post('/', authenticateToken, async (req, res) => {
 router.put('/:id', authenticateToken, async (req, res) => {
   const { id } = req.params;
   const { category, item, value } = req.body;
-  const userId = req.user.id;
 
   if (!category || !item || !value) {
     return res.status(400).json({ error: 'category, item, and value are required' });
@@ -77,10 +84,6 @@ router.put('/:id', authenticateToken, async (req, res) => {
 
     if (!preference) {
       return res.status(404).json({ error: 'Preference not found' });
-    }
-
-    if (preference.userId !== userId) {
-      return res.status(403).json({ error: 'Forbidden: You do not own this preference' });
     }
 
     const updated = await prisma.preference.update({
@@ -97,7 +100,6 @@ router.put('/:id', authenticateToken, async (req, res) => {
 // Delete preference
 router.delete('/:id', authenticateToken, async (req, res) => {
   const { id } = req.params;
-  const userId = req.user.id;
 
   try {
     const preference = await prisma.preference.findUnique({
@@ -106,10 +108,6 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 
     if (!preference) {
       return res.status(404).json({ error: 'Preference not found' });
-    }
-
-    if (preference.userId !== userId) {
-      return res.status(403).json({ error: 'Forbidden: You do not own this preference' });
     }
 
     await prisma.preference.delete({
