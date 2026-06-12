@@ -28,7 +28,7 @@ if (!fs.existsSync(UPLOADS_DIR)) {
 const storage = multer.memoryStorage();
 const upload = multer({
   storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  limits: { fileSize: 20 * 1024 * 1024 }, // 20MB limit
   fileFilter: (req, file, cb) => {
     const filetypes = /jpeg|jpg|png|webp|gif/;
     const mimetype = filetypes.test(file.mimetype);
@@ -173,11 +173,7 @@ router.put('/:id', authenticateToken, upload.array('images', 10), async (req, re
       return res.status(404).json({ error: 'Memory not found' });
     }
 
-    // IDOR protection: verify ownership
-    if (memory.authorId !== userId) {
-      return res.status(403).json({ error: 'Forbidden: You do not own this memory' });
-    }
-
+    // For shared couple memories, we allow both partners to edit
     // Parse existingImageIds that the client wants to keep
     let existingImageIds = null;
     if (req.body.existingImageIds !== undefined) {
@@ -280,11 +276,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'Memory not found' });
     }
 
-    // IDOR protection: verify ownership
-    if (memory.authorId !== userId) {
-      return res.status(403).json({ error: 'Forbidden: You do not own this memory' });
-    }
-
+    // For shared couple memories, we allow both partners to delete
     await prisma.memory.delete({
       where: { id },
     });

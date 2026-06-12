@@ -30,7 +30,7 @@ if (!fs.existsSync(UPLOADS_DIR)) {
 const storage = multer.memoryStorage();
 const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  limits: { fileSize: 20 * 1024 * 1024 }, // 20MB limit
   fileFilter: (req, file, cb) => {
     const filetypes = /jpeg|jpg|png|webp|gif/;
     const mimetype = filetypes.test(file.mimetype);

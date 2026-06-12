@@ -13,7 +13,7 @@ const router = Router();
 const storage = multer.memoryStorage();
 const upload = multer({
   storage,
-  limits: { fileSize: 10 * 1024 * 1024 },
+  limits: { fileSize: 20 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const filetypes = /jpeg|jpg|png|webp|gif/;
     const mimetype = filetypes.test(file.mimetype);
