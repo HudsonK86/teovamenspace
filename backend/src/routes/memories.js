@@ -97,7 +97,7 @@ router.get('/', authenticateToken, async (req, res) => {
         author: {
           select: { id: true, name: true, avatar: true, role: true },
         },
-        images: true,
+        images: { orderBy: { createdAt: 'asc' } },
       },
       orderBy: { date: 'desc' },
     });
@@ -142,7 +142,7 @@ router.post('/', authenticateToken, upload.array('images', 10), async (req, res)
         author: {
           select: { id: true, name: true, avatar: true, role: true },
         },
-        images: true
+        images: { orderBy: { createdAt: 'asc' } }
       },
     });
 
@@ -166,14 +166,13 @@ router.put('/:id', authenticateToken, upload.array('images', 10), async (req, re
   try {
     const memory = await prisma.memory.findUnique({
       where: { id },
-      include: { images: true }
+      include: { images: { orderBy: { createdAt: 'asc' } } }
     });
 
     if (!memory) {
       return res.status(404).json({ error: 'Memory not found' });
     }
 
-    // For shared couple memories, we allow both partners to edit
     // Parse existingImageIds that the client wants to keep
     let existingImageIds = null;
     if (req.body.existingImageIds !== undefined) {
@@ -188,32 +187,31 @@ router.put('/:id', authenticateToken, upload.array('images', 10), async (req, re
       }
     }
 
-    // Determine images to delete if existingImageIds is provided
-    if (existingImageIds !== null) {
-      const imagesToDelete = memory.images.filter(img => !existingImageIds.includes(img.id));
+    // Determine the images to keep in their exact new order
+    const imagesToKeep = existingImageIds !== null
+      ? existingImageIds.map(imgId => memory.images.find(img => img.id === imgId)).filter(Boolean)
+      : memory.images;
 
-      // Delete removed images from database and filesystem
-      if (imagesToDelete.length > 0) {
-        await prisma.memoryImage.deleteMany({
-          where: {
-            id: { in: imagesToDelete.map(img => img.id) }
-          }
-        });
+    // Identify images to delete from disk (present in memory.images but NOT in imagesToKeep)
+    const keptUrls = imagesToKeep.map(img => img.url);
+    const imagesToDelete = memory.images.filter(img => !keptUrls.includes(img.url));
 
-        for (const img of imagesToDelete) {
-          if (img.url && img.url.startsWith('/uploads/')) {
-            try {
-              const localFilePath = sanitizePath('.', img.url);
-              if (fs.existsSync(localFilePath)) {
-                fs.unlinkSync(localFilePath);
-              }
-            } catch (err) {
-              console.error('Path traversal blocked or file delete failed:', err.message);
-            }
+    // Delete those from disk
+    for (const img of imagesToDelete) {
+      if (img.url && img.url.startsWith('/uploads/')) {
+        try {
+          const localFilePath = sanitizePath('.', img.url);
+          if (fs.existsSync(localFilePath)) {
+            fs.unlinkSync(localFilePath);
           }
+        } catch (err) {
+          console.error('Path traversal blocked or file delete failed:', err.message);
         }
       }
     }
+
+    // Delete ALL image records for this memory from database
+    await prisma.memoryImage.deleteMany({ where: { memoryId: id } });
 
     // Handle new file uploads
     const uploadedUrls = [];
@@ -224,17 +222,14 @@ router.put('/:id', authenticateToken, upload.array('images', 10), async (req, re
       }
     }
 
-    // Calculate new imageUrl
-    const remainingImages = existingImageIds !== null
-      ? memory.images.filter(img => existingImageIds.includes(img.id))
-      : memory.images;
-    const allImagesAfterUpdate = [
-      ...remainingImages.map(img => img.url),
+    // Build final list of urls in the exact new order
+    const finalUrls = [
+      ...imagesToKeep.map(img => img.url),
       ...uploadedUrls
     ];
-    const firstImageUrl = allImagesAfterUpdate.length > 0 ? allImagesAfterUpdate[0] : null;
+    const firstImageUrl = finalUrls.length > 0 ? finalUrls[0] : null;
 
-    // Update memory details
+    // Update memory details and recreate image records in the exact order
     const updatedMemory = await prisma.memory.update({
       where: { id },
       data: {
@@ -243,14 +238,16 @@ router.put('/:id', authenticateToken, upload.array('images', 10), async (req, re
         date: new Date(date),
         imageUrl: firstImageUrl,
         images: {
-          create: uploadedUrls.map(url => ({ url }))
+          create: finalUrls.map(url => ({ url }))
         }
       },
       include: {
         author: {
           select: { id: true, name: true, avatar: true, role: true },
         },
-        images: true
+        images: {
+          orderBy: { createdAt: 'asc' }
+        }
       }
     });
 
@@ -269,7 +266,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
   try {
     const memory = await prisma.memory.findUnique({
       where: { id },
-      include: { images: true }
+      include: { images: { orderBy: { createdAt: 'asc' } } }
     });
 
     if (!memory) {

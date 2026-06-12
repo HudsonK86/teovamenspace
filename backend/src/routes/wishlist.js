@@ -86,7 +86,7 @@ router.get('/', authenticateToken, async (req, res) => {
         boughtBy: {
           select: { id: true, name: true, avatar: true, role: true }
         },
-        images: true
+        images: { orderBy: { createdAt: 'asc' } }
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -136,7 +136,7 @@ router.post('/', authenticateToken, upload.array('images', 10), async (req, res)
         owner: {
           select: { id: true, name: true, avatar: true }
         },
-        images: true
+        images: { orderBy: { createdAt: 'asc' } }
       }
     });
 
@@ -156,7 +156,7 @@ router.patch('/:id', authenticateToken, upload.array('images', 10), async (req, 
   try {
     const item = await prisma.wishlistItem.findUnique({
       where: { id },
-      include: { images: true }
+      include: { images: { orderBy: { createdAt: 'asc' } } }
     });
 
     if (!item) {
@@ -185,27 +185,31 @@ router.patch('/:id', authenticateToken, upload.array('images', 10), async (req, 
       }
     }
 
-    // Determine images to delete if existingImageIds is provided
-    if (existingImageIds !== null) {
-      const imagesToDelete = item.images.filter(img => !existingImageIds.includes(img.id));
+    // Determine the images to keep in their exact new order
+    const imagesToKeep = existingImageIds !== null
+      ? existingImageIds.map(imgId => item.images.find(img => img.id === imgId)).filter(Boolean)
+      : item.images;
 
-      if (imagesToDelete.length > 0) {
-        await prisma.wishlistImage.deleteMany({
-          where: {
-            id: { in: imagesToDelete.map(img => img.id) }
-          }
-        });
+    // Identify images to delete from disk (present in item.images but NOT in imagesToKeep)
+    const keptUrls = imagesToKeep.map(img => img.url);
+    const imagesToDelete = item.images.filter(img => !keptUrls.includes(img.url));
 
-        for (const img of imagesToDelete) {
-          if (img.url && img.url.startsWith('/uploads/')) {
-            const localFilePath = path.join('.', img.url);
-            if (fs.existsSync(localFilePath)) {
-              fs.unlinkSync(localFilePath);
-            }
+    // Delete those from disk
+    for (const img of imagesToDelete) {
+      if (img.url && img.url.startsWith('/uploads/')) {
+        try {
+          const localFilePath = path.join('.', img.url);
+          if (fs.existsSync(localFilePath)) {
+            fs.unlinkSync(localFilePath);
           }
+        } catch (err) {
+          console.error('File delete failed:', err.message);
         }
       }
     }
+
+    // Delete ALL image records for this wishlist item from database
+    await prisma.wishlistImage.deleteMany({ where: { wishitemId: id } });
 
     // Handle new file uploads
     const uploadedUrls = [];
@@ -216,15 +220,12 @@ router.patch('/:id', authenticateToken, upload.array('images', 10), async (req, 
       }
     }
 
-    // Calculate new imageUrl
-    const remainingImages = existingImageIds !== null
-      ? item.images.filter(img => existingImageIds.includes(img.id))
-      : item.images;
-    const allImagesAfterUpdate = [
-      ...remainingImages.map(img => img.url),
+    // Build final list of urls in the exact new order
+    const finalUrls = [
+      ...imagesToKeep.map(img => img.url),
       ...uploadedUrls
     ];
-    const firstImageUrl = allImagesAfterUpdate.length > 0 ? allImagesAfterUpdate[0] : null;
+    const firstImageUrl = finalUrls.length > 0 ? finalUrls[0] : null;
 
     const updateData = {};
 
@@ -248,10 +249,10 @@ router.patch('/:id', authenticateToken, upload.array('images', 10), async (req, 
       }
       if (url !== undefined) updateData.url = url;
 
-      // Update imageUrl and images relation
+      // Update imageUrl and images relation by creating all kept and new urls in exact order
       updateData.imageUrl = firstImageUrl;
       updateData.images = {
-        create: uploadedUrls.map(url => ({ url }))
+        create: finalUrls.map(url => ({ url }))
       };
     }
 
@@ -265,7 +266,9 @@ router.patch('/:id', authenticateToken, upload.array('images', 10), async (req, 
         boughtBy: {
           select: { id: true, name: true, avatar: true, role: true }
         },
-        images: true
+        images: {
+          orderBy: { createdAt: 'asc' }
+        }
       }
     });
 
@@ -283,7 +286,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
   try {
     const item = await prisma.wishlistItem.findUnique({
       where: { id },
-      include: { images: true }
+      include: { images: { orderBy: { createdAt: 'asc' } } }
     });
 
     if (!item) {

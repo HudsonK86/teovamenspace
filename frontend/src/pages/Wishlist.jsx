@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Plus, X, Camera, Gift, ExternalLink, CheckCircle, Trash2, Heart, AlertCircle, Edit } from 'lucide-react';
+import { Plus, X, Camera, Gift, ExternalLink, CheckCircle, Trash2, Heart, AlertCircle, Edit, ChevronUp, ChevronDown } from 'lucide-react';
 import { API_BASE_URL } from '../config.js';
 const getCurrencySymbol = (currency) => {
   switch (currency) {
@@ -74,6 +74,7 @@ export default function Wishlist({ user, partners, wishlistItems, setWishlistIte
   const [editExistingImages, setEditExistingImages] = useState([]);
   const [editImageFiles, setEditImageFiles] = useState([]);
   const [editImagePreviews, setEditImagePreviews] = useState([]);
+  const [editDraggedIdx, setEditDraggedIdx] = useState(null);
 
   const fileInputRef = useRef(null);
   const editFileInputRef = useRef(null);
@@ -224,6 +225,74 @@ export default function Wishlist({ user, partners, wishlistItems, setWishlistIte
 
   const removeExistingImage = (imageId) => {
     setEditExistingImages(prev => prev.filter(img => img.id !== imageId));
+  };
+
+  const handleEditDragStartImage = (idx, isExisting) => {
+    setEditDraggedIdx({ idx, isExisting });
+  };
+
+  const handleEditDragOverImage = (e) => {
+    e.preventDefault();
+  };
+
+  const handleEditDropImage = (targetIdx, isTargetExisting) => {
+    if (!editDraggedIdx) return;
+
+    const { idx: draggedIdx, isExisting: isDraggedExisting } = editDraggedIdx;
+
+    if (isDraggedExisting && isTargetExisting) {
+      const newExisting = [...editExistingImages];
+      const draggedImg = newExisting[draggedIdx];
+      newExisting.splice(draggedIdx, 1);
+      newExisting.splice(targetIdx, 0, draggedImg);
+      setEditExistingImages(newExisting);
+    } else if (!isDraggedExisting && !isTargetExisting) {
+      const newPreviews = [...editImagePreviews];
+      const newFiles = [...editImageFiles];
+      const draggedPreview = newPreviews[draggedIdx];
+      const draggedFile = newFiles[draggedIdx];
+      newPreviews.splice(draggedIdx, 1);
+      newFiles.splice(draggedIdx, 1);
+      newPreviews.splice(targetIdx, 0, draggedPreview);
+      newFiles.splice(targetIdx, 0, draggedFile);
+      setEditImagePreviews(newPreviews);
+      setEditImageFiles(newFiles);
+    }
+
+    setEditDraggedIdx(null);
+  };
+
+  const moveEditImageUp = (idx, isExisting) => {
+    if (idx === 0) return;
+    if (isExisting) {
+      const newExisting = [...editExistingImages];
+      [newExisting[idx - 1], newExisting[idx]] = [newExisting[idx], newExisting[idx - 1]];
+      setEditExistingImages(newExisting);
+    } else {
+      const newPreviews = [...editImagePreviews];
+      const newFiles = [...editImageFiles];
+      [newPreviews[idx - 1], newPreviews[idx]] = [newPreviews[idx], newPreviews[idx - 1]];
+      [newFiles[idx - 1], newFiles[idx]] = [newFiles[idx], newFiles[idx - 1]];
+      setEditImagePreviews(newPreviews);
+      setEditImageFiles(newFiles);
+    }
+  };
+
+  const moveEditImageDown = (idx, isExisting) => {
+    const list = isExisting ? editExistingImages : editImagePreviews;
+    if (idx === list.length - 1) return;
+    if (isExisting) {
+      const newExisting = [...editExistingImages];
+      [newExisting[idx], newExisting[idx + 1]] = [newExisting[idx + 1], newExisting[idx]];
+      setEditExistingImages(newExisting);
+    } else {
+      const newPreviews = [...editImagePreviews];
+      const newFiles = [...editImageFiles];
+      [newPreviews[idx], newPreviews[idx + 1]] = [newPreviews[idx + 1], newPreviews[idx]];
+      [newFiles[idx], newFiles[idx + 1]] = [newFiles[idx + 1], newFiles[idx]];
+      setEditImagePreviews(newPreviews);
+      setEditImageFiles(newFiles);
+    }
   };
 
   const startEditing = (item) => {
@@ -852,10 +921,18 @@ export default function Wishlist({ user, partners, wishlistItems, setWishlistIte
                   {editExistingImages.length > 0 || editImagePreviews.length > 0 ? (
                     <div className="previews-wrapper" onClick={(e) => e.stopPropagation()}>
                       {/* Existing database images */}
-                      {editExistingImages.map((img) => {
+                      {editExistingImages.map((img, idx) => {
                         const fullUrl = img.url.startsWith('/uploads/') ? `${API_BASE_URL}${img.url}` : img.url;
                         return (
-                          <div key={img.id} className="thumbnail-container">
+                          <div 
+                            key={img.id} 
+                            className="thumbnail-container"
+                            draggable
+                            onDragStart={() => handleEditDragStartImage(idx, true)}
+                            onDragOver={handleEditDragOverImage}
+                            onDrop={() => handleEditDropImage(idx, true)}
+                            style={{ opacity: editDraggedIdx?.isExisting && editDraggedIdx?.idx === idx ? 0.5 : 1, position: 'relative' }}
+                          >
                             <img src={fullUrl} alt="Existing" className="thumbnail-image" />
                             <button
                               type="button"
@@ -865,13 +942,41 @@ export default function Wishlist({ user, partners, wishlistItems, setWishlistIte
                             >
                               <X size={10} />
                             </button>
+                            <div style={styles.mobileArrowButtons}>
+                              <button
+                                type="button"
+                                onClick={() => moveEditImageUp(idx, true)}
+                                disabled={idx === 0}
+                                style={{ ...styles.arrowBtn, opacity: idx === 0 ? 0.3 : 1 }}
+                                title="Move up"
+                              >
+                                <ChevronUp size={14} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => moveEditImageDown(idx, true)}
+                                disabled={idx === editExistingImages.length - 1}
+                                style={{ ...styles.arrowBtn, opacity: idx === editExistingImages.length - 1 ? 0.3 : 1 }}
+                                title="Move down"
+                              >
+                                <ChevronDown size={14} />
+                              </button>
+                            </div>
                           </div>
                         );
                       })}
 
                       {/* Newly selected image previews */}
                       {editImagePreviews.map((preview, index) => (
-                        <div key={index} className="thumbnail-container">
+                        <div 
+                          key={index} 
+                          className="thumbnail-container"
+                          draggable
+                          onDragStart={() => handleEditDragStartImage(index, false)}
+                          onDragOver={handleEditDragOverImage}
+                          onDrop={() => handleEditDropImage(index, false)}
+                          style={{ opacity: !editDraggedIdx?.isExisting && editDraggedIdx?.idx === index ? 0.5 : 1, position: 'relative' }}
+                        >
                           <img src={preview} alt={`Selected ${index + 1}`} className="thumbnail-image" />
                           <button
                             type="button"
@@ -881,6 +986,26 @@ export default function Wishlist({ user, partners, wishlistItems, setWishlistIte
                           >
                             <X size={10} />
                           </button>
+                          <div style={styles.mobileArrowButtons}>
+                            <button
+                              type="button"
+                              onClick={() => moveEditImageUp(index, false)}
+                              disabled={index === 0}
+                              style={{ ...styles.arrowBtn, opacity: index === 0 ? 0.3 : 1 }}
+                              title="Move up"
+                            >
+                              <ChevronUp size={14} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => moveEditImageDown(index, false)}
+                              disabled={index === editImagePreviews.length - 1}
+                              style={{ ...styles.arrowBtn, opacity: index === editImagePreviews.length - 1 ? 0.3 : 1 }}
+                              title="Move down"
+                            >
+                              <ChevronDown size={14} />
+                            </button>
+                          </div>
                         </div>
                       ))}
                       <div className="add-more-thumbnail" onClick={() => editFileInputRef.current.click()}>
@@ -1145,4 +1270,48 @@ const styles = {
     background: 'var(--card-bg)',
     border: '1px dashed var(--border-card)',
   },
+  mobileArrowButtons: {
+    position: 'absolute',
+    bottom: '6px',
+    left: '50%',
+    transform: 'translateX(-50%)',
+    display: 'flex',
+    gap: '4px',
+    opacity: 0,
+    transition: 'opacity 0.2s',
+  },
+  arrowBtn: {
+    background: 'rgba(255, 255, 255, 0.95)',
+    border: 'none',
+    width: '24px',
+    height: '24px',
+    borderRadius: '50%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    color: 'var(--primary)',
+    boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
+    transition: 'opacity 0.2s',
+  },
 };
+
+if (typeof window !== 'undefined') {
+  const css = `
+    .thumbnail-container:hover .mobileArrowButtons {
+      opacity: 1 !important;
+    }
+    .mobileArrowButtons button:disabled {
+      cursor: not-allowed !important;
+    }
+    @media (max-width: 820px) {
+      .mobileArrowButtons {
+        opacity: 1 !important;
+      }
+    }
+  `;
+  const style = document.createElement('style');
+  style.type = 'text/css';
+  style.appendChild(document.createTextNode(css));
+  document.head.appendChild(style);
+}
