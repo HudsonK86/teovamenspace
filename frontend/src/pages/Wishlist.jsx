@@ -221,6 +221,7 @@ export default function Wishlist({ user, partners, wishlistItems, setWishlistIte
 
       setWishlistItems(prev => prev.map(item => item.id === id ? data : item));
       setIsEditing(false);
+      setSelectedWishItemId(null);
     } catch (err) {
       alert(err.message);
     } finally {
@@ -499,15 +500,14 @@ export default function Wishlist({ user, partners, wishlistItems, setWishlistIte
               ? (currentImgUrl.startsWith('/uploads/') ? `${API_BASE_URL}${currentImgUrl}` : currentImgUrl)
               : null;
             
+            const buyer = item.boughtById
+              ? (item.boughtById === user?.id ? user : (partners.find(p => p.id === item.boughtById) || item.boughtBy))
+              : null;
+
             return (
               <div 
                 key={item.id} 
                 className="glass-panel wish-card"
-                onClick={() => {
-                  setSelectedWishItemId(item.id);
-                  setModalActiveIndex(0);
-                }}
-                style={{ cursor: 'pointer' }}
               >
                 
                 {/* Badge Status */}
@@ -588,8 +588,47 @@ export default function Wishlist({ user, partners, wishlistItems, setWishlistIte
                       {formatPrice(item.price, item.currency)}
                     </span>
                   )}
+                  
+                  {/* Love Level (Hearts) */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', margin: '4px 0 8px 0' }}>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '600' }}>
+                      Love Level:
+                    </span>
+                    <div style={{ display: 'flex', gap: '2px', fontSize: '0.85rem' }}>
+                      {Array.from({ length: 10 }).map((_, i) => (
+                        <span key={i} style={{ opacity: i < (item.priority || 5) ? 1 : 0.15 }}>
+                          ❤️
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
                   {item.description && (
                     <p style={styles.wishDesc}>{item.description}</p>
+                  )}
+
+                  {/* Buyer / Fulfiller Info */}
+                  {item.isPurchased && buyer && (
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '8px', 
+                      background: 'rgba(46, 204, 113, 0.08)', 
+                      border: '1px solid rgba(46, 204, 113, 0.15)',
+                      padding: '8px 12px', 
+                      borderRadius: '10px',
+                      marginTop: '8px',
+                      marginBottom: '8px'
+                    }}>
+                      <img 
+                        src={buyer.avatar ? (buyer.avatar.startsWith('/uploads/') ? `${API_BASE_URL}${buyer.avatar}` : buyer.avatar) : 'https://api.dicebear.com/7.x/adventurer/svg?seed=User'} 
+                        alt={buyer.name} 
+                        style={{ width: '20px', height: '20px', borderRadius: '50%', border: '1px solid var(--success)' }} 
+                      />
+                      <span style={{ fontSize: '0.8rem', fontWeight: '600', color: 'var(--success)' }}>
+                        Fulfilled by {buyer.name}! 💝
+                      </span>
+                    </div>
                   )}
 
                   {/* Actions Area */}
@@ -624,18 +663,33 @@ export default function Wishlist({ user, partners, wishlistItems, setWishlistIte
                       </button>
                     ) : (
                       !item.isPurchased && (
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteWish(item.id);
-                          }}
-                          className="btn-secondary"
-                          style={{ padding: '8px 12px', fontSize: '0.85rem', color: 'var(--danger)', flex: item.url ? '0 0 auto' : 1, justifyContent: 'center' }}
-                          title="Delete Wish"
-                        >
-                          <Trash2 size={14} />
-                          {!item.url && 'Remove'}
-                        </button>
+                        <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              startEditing(item);
+                              setSelectedWishItemId(item.id);
+                            }}
+                            className="btn-secondary"
+                            style={{ padding: '8px 12px', fontSize: '0.85rem', flex: 1, justifyContent: 'center' }}
+                            title="Edit Wish"
+                          >
+                            <Edit size={14} />
+                            Edit
+                          </button>
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteWish(item.id);
+                            }}
+                            className="btn-secondary"
+                            style={{ padding: '8px 12px', fontSize: '0.85rem', color: 'var(--danger)', flex: 1, justifyContent: 'center' }}
+                            title="Delete Wish"
+                          >
+                            <Trash2 size={14} />
+                            Remove
+                          </button>
+                        </div>
                       )
                     )}
                   </div>
@@ -657,369 +711,134 @@ export default function Wishlist({ user, partners, wishlistItems, setWishlistIte
         </div>
       )}
 
-      {/* Wish Details Modal */}
-      {selectedWishItemId && (() => {
+      {/* Wish Edit Modal (standalone) */}
+      {selectedWishItemId && isEditing && (() => {
         const item = wishlistItems.find(i => i.id === selectedWishItemId);
         if (!item) return null;
         
-        const imagesList = item.images && item.images.length > 0
-          ? item.images.map(img => img.url)
-          : (item.imageUrl ? [item.imageUrl] : []);
-
-        const currentImgUrl = imagesList.length > 0 ? imagesList[modalActiveIndex] : null;
-        const itemUrl = currentImgUrl
-          ? (currentImgUrl.startsWith('/uploads/') ? `${API_BASE_URL}${currentImgUrl}` : currentImgUrl)
-          : null;
-
-        const owner = (user && user.id === item.ownerId)
-          ? user
-          : (partners.find(p => p.id === item.ownerId) || item.owner);
-
-        const buyer = item.boughtById
-          ? (item.boughtById === user?.id ? user : (partners.find(p => p.id === item.boughtById) || item.boughtBy))
-          : null;
-
         return (
           <div className="modal-overlay" onClick={() => { setSelectedWishItemId(null); setIsEditing(false); }}>
             <div 
               className="glass-panel modal-content" 
               style={{ 
                 position: 'relative', 
-                maxWidth: '600px', 
+                maxWidth: '520px', 
                 width: '90%', 
-                padding: '0', 
+                padding: '24px', 
                 borderRadius: '24px', 
                 overflowY: 'auto',
                 maxHeight: '90vh'
               }}
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Close Button */}
-              <button 
-                onClick={() => { setSelectedWishItemId(null); setIsEditing(false); }} 
-                style={{
-                  position: 'absolute',
-                  top: '16px',
-                  right: '16px',
-                  background: 'rgba(0, 0, 0, 0.4)',
-                  border: 'none',
-                  borderRadius: '50%',
-                  width: '32px',
-                  height: '32px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  color: 'white',
-                  zIndex: 10,
-                  backdropFilter: 'blur(4px)'
-                }}
-              >
-                <X size={18} />
+              <button onClick={() => { setSelectedWishItemId(null); setIsEditing(false); }} style={styles.closeBtn}>
+                <X size={20} />
               </button>
+              <h3 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Heart size={20} fill="var(--primary)" color="var(--primary)" />
+                Edit Wishlist Item
+              </h3>
 
-              {/* Large Image Carousel */}
-              <div style={{ position: 'relative', width: '100%', height: '350px', background: 'rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {itemUrl ? (
-                  <div className="carousel-container" style={{ width: '100%', height: '100%' }}>
-                    <img 
-                      src={itemUrl} 
-                      alt={item.title} 
-                      style={{ width: '100%', height: '100%', objectFit: 'contain', background: 'rgba(0,0,0,0.02)' }} 
-                    />
-                    
-                    {imagesList.length > 1 && (
-                      <>
-                        <button 
-                          type="button"
-                          onClick={() => {
-                            setModalActiveIndex(prev => (prev - 1 + imagesList.length) % imagesList.length);
-                          }}
-                          className="carousel-arrow left"
-                          title="Previous Photo"
-                        >
-                          &lsaquo;
-                        </button>
-                        
-                        <button 
-                          type="button"
-                          onClick={() => {
-                            setModalActiveIndex(prev => (prev + 1) % imagesList.length);
-                          }}
-                          className="carousel-arrow right"
-                          title="Next Photo"
-                        >
-                          &rsaquo;
-                        </button>
+              <form onSubmit={(e) => { e.preventDefault(); handleUpdateWish(item.id); }} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div className="form-group">
+                  <label>Gift Item Name</label>
+                  <input 
+                    type="text" 
+                    className="form-input" 
+                    value={editTitle} 
+                    onChange={e => setEditTitle(e.target.value)}
+                    required 
+                  />
+                </div>
 
-                        <div className="carousel-dots">
-                          {imagesList.map((_, idx) => (
-                            <div 
-                              key={idx} 
-                              className="carousel-dot"
-                              style={{
-                                background: idx === modalActiveIndex ? 'var(--primary)' : 'rgba(255, 255, 255, 0.4)'
-                              }}
-                              onClick={() => setModalActiveIndex(idx)}
-                            />
-                          ))}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                ) : (
-                  <div style={{ color: 'var(--text-muted)', opacity: 0.3, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                    <Gift size={64} strokeWidth={1.2} />
-                    <span style={{ fontSize: '0.9rem' }}>No reference picture</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Wish Details Content */}
-              {isEditing ? (
-                <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  <h3 style={{ margin: 0, fontWeight: '700', fontSize: '1.25rem' }}>Edit Wish Details</h3>
-                  
-                  <div className="form-group">
-                    <label>Gift Item Name</label>
-                    <input 
-                      type="text" 
-                      className="form-input" 
-                      value={editTitle} 
-                      onChange={e => setEditTitle(e.target.value)}
-                      required 
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label>Price & Currency (Optional)</label>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <select 
-                        className="form-input" 
-                        style={{ width: '110px', padding: '8px' }} 
-                        value={editCurrency} 
-                        onChange={e => setEditCurrency(e.target.value)}
-                      >
-                        <option value="USD">USD ($)</option>
-                        <option value="VND">VND (₫)</option>
-                        <option value="MYR">MYR (RM)</option>
-                        <option value="EUR">EURO (€)</option>
-                      </select>
-                      <div style={{ position: 'relative', flex: 1 }}>
-                        <span style={styles.priceSymbol}>{getCurrencySymbol(editCurrency)}</span>
-                        <input 
-                          type="number" 
-                          step="0.01"
-                          className="form-input" 
-                          style={{ paddingLeft: '28px' }}
-                          placeholder="0.00" 
-                          value={editPrice} 
-                          onChange={e => setEditPrice(e.target.value)}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="form-group">
-                    <label>Shopping Link URL (Optional)</label>
-                    <input 
-                      type="url" 
-                      className="form-input" 
-                      value={editUrl} 
-                      onChange={e => setEditUrl(e.target.value)}
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label>Love Level / Priority</label>
+                <div className="form-group">
+                  <label>Price & Currency (Optional)</label>
+                  <div style={{ display: 'flex', gap: '8px' }}>
                     <select 
                       className="form-input" 
-                      value={editPriority} 
-                      onChange={e => setEditPriority(parseInt(e.target.value))}
+                      style={{ width: '110px', padding: '8px' }} 
+                      value={editCurrency} 
+                      onChange={e => setEditCurrency(e.target.value)}
                     >
-                      <option value="10">10/10 - Absolutely obsessed! 😍</option>
-                      <option value="9">9/10 - Really want this! 🔥</option>
-                      <option value="8">8/10 - Would love to have! 💖</option>
-                      <option value="7">7/10 - Want it a lot! 🥰</option>
-                      <option value="6">6/10 - Nice to have! 🙂</option>
-                      <option value="5">5/10 - Regular want! Choice</option>
-                      <option value="4">4/10 - Cute minor wish! 🌱</option>
-                      <option value="3">3/10 - If it's on sale! 🏷️</option>
-                      <option value="2">2/10 - Low priority! ☁️</option>
-                      <option value="1">1/10 - Just an idea! 💡</option>
+                      <option value="USD">USD ($)</option>
+                      <option value="VND">VND (₫)</option>
+                      <option value="MYR">MYR (RM)</option>
+                      <option value="EUR">EURO (€)</option>
                     </select>
-                  </div>
-
-                  <div className="form-group">
-                    <label>Notes & Details</label>
-                    <textarea 
-                      className="form-input" 
-                      style={{ minHeight: '100px', resize: 'vertical' }}
-                      value={editDescription} 
-                      onChange={e => setEditDescription(e.target.value)}
-                    />
-                  </div>
-
-                  <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
-                    <button 
-                      onClick={() => handleUpdateWish(item.id)}
-                      className="btn-primary"
-                      style={{ padding: '12px', fontSize: '0.95rem', flex: 1, justifyContent: 'center' }}
-                      disabled={loading}
-                    >
-                      {loading ? 'Saving...' : 'Save Changes'}
-                    </button>
-                    <button 
-                      onClick={() => setIsEditing(false)}
-                      className="btn-secondary"
-                      style={{ padding: '12px', fontSize: '0.95rem', flex: 1, justifyContent: 'center' }}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  
-                  {/* Header info (Title and Status Badges) */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', flexWrap: 'wrap' }}>
-                    <div>
-                      <h3 className="title-serif" style={{ fontSize: '1.6rem', fontWeight: '700', margin: 0, color: 'var(--text-main)' }}>
-                        {item.title}
-                      </h3>
-                      <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-                        Added for: <strong style={{ color: 'var(--primary)' }}>{owner?.name || 'Unknown'}</strong>
-                      </p>
-                    </div>
-                    
-                    <span className={`wish-badge ${item.isPurchased ? 'purchased' : 'wished'}`} style={{ position: 'static' }}>
-                      {item.isPurchased ? 'Purchased 🎁' : 'Wished ✨'}
-                    </span>
-                  </div>
-
-                  {/* Price */}
-                  {item.price !== null && item.price !== undefined && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <span style={{ fontSize: '1.5rem', fontWeight: '800', color: 'var(--primary)' }}>
-                        {formatPrice(item.price, item.currency)}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Priority / Love Meter */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      Love Meter: <strong style={{ color: 'var(--primary)', fontSize: '0.95rem' }}>{item.priority || 5}/10</strong>
-                    </span>
-                    <div style={{ display: 'flex', gap: '2px', fontSize: '1.1rem' }}>
-                      {Array.from({ length: 10 }).map((_, i) => (
-                        <span key={i} style={{ opacity: i < (item.priority || 5) ? 1 : 0.2, filter: i < (item.priority || 5) ? 'none' : 'grayscale(100%)' }}>
-                          ❤️
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Buyer / Fulfiller Info */}
-                  {item.isPurchased && buyer && (
-                    <div style={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      gap: '10px', 
-                      background: 'rgba(46, 204, 113, 0.1)', 
-                      border: '1px solid rgba(46, 204, 113, 0.2)',
-                      padding: '10px 16px', 
-                      borderRadius: '12px' 
-                    }}>
-                      <img 
-                        src={buyer.avatar ? (buyer.avatar.startsWith('/uploads/') ? `${API_BASE_URL}${buyer.avatar}` : buyer.avatar) : 'https://api.dicebear.com/7.x/adventurer/svg?seed=User'} 
-                        alt={buyer.name} 
-                        style={{ width: '24px', height: '24px', borderRadius: '50%', border: '1.5px solid var(--success)' }} 
+                    <div style={{ position: 'relative', flex: 1 }}>
+                      <span style={styles.priceSymbol}>{getCurrencySymbol(editCurrency)}</span>
+                      <input 
+                        type="number" 
+                        step="0.01"
+                        className="form-input" 
+                        style={{ paddingLeft: '28px' }}
+                        placeholder="0.00" 
+                        value={editPrice} 
+                        onChange={e => setEditPrice(e.target.value)}
                       />
-                      <span style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--success)' }}>
-                        Fulfilled by {buyer.name}! Thank you 💖
-                      </span>
                     </div>
-                  )}
-
-                  {/* Description / Notes (Un-clamped) */}
-                  {item.description && (
-                    <div style={{ 
-                      borderTop: '1px solid var(--border-light)', 
-                      borderBottom: '1px solid var(--border-light)', 
-                      padding: '16px 0',
-                      maxHeight: '200px',
-                      overflowY: 'auto'
-                    }}>
-                      <h4 style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '8px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                        Notes & Details
-                      </h4>
-                      <p style={{ fontSize: '0.95rem', color: 'var(--text-main)', lineHeight: '1.6', whiteSpace: 'pre-wrap', margin: 0 }}>
-                        {item.description}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Actions Area */}
-                  <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
-                    {item.url && (
-                      <a 
-                        href={item.url} 
-                        target="_blank" 
-                        rel="noopener noreferrer" 
-                        className="btn-secondary"
-                        style={{ padding: '12px', fontSize: '0.95rem', flex: 1, justifyContent: 'center' }}
-                      >
-                        <ExternalLink size={16} />
-                        Buy Link / Shop Online
-                      </a>
-                    )}
-
-                    {/* Fulfill actions (only if viewing partner's wishlist) */}
-                    {item.ownerId !== user?.id ? (
-                      <button 
-                        onClick={() => {
-                          handleMarkPurchased(item.id, item.isPurchased);
-                        }}
-                        className={item.isPurchased ? 'btn-secondary' : 'btn-primary'}
-                        style={{ padding: '12px', fontSize: '0.95rem', flex: 1, justifyContent: 'center' }}
-                      >
-                        <CheckCircle size={16} />
-                        {item.isPurchased ? 'Mark Unbought' : 'Mark Purchased'}
-                      </button>
-                    ) : (
-                      // Delete and Edit buttons for user's own items
-                      <>
-                        {!item.isPurchased && (
-                          <button 
-                            onClick={() => startEditing(item)}
-                            className="btn-primary"
-                            style={{ padding: '12px', fontSize: '0.95rem', flex: 1, justifyContent: 'center' }}
-                          >
-                            <Edit size={16} />
-                            Edit Details
-                          </button>
-                        )}
-                        {!item.isPurchased && (
-                          <button 
-                            onClick={() => {
-                              handleDeleteWish(item.id);
-                              setSelectedWishItemId(null);
-                            }}
-                            className="btn-secondary"
-                            style={{ padding: '12px', fontSize: '0.95rem', color: 'var(--danger)', flex: item.url ? '0 0 auto' : 1, justifyContent: 'center' }}
-                            title="Delete Wish"
-                          >
-                            <Trash2 size={16} />
-                            Delete Wish
-                          </button>
-                        )}
-                      </>
-                    )}
                   </div>
-
                 </div>
-              )}
+
+                <div className="form-group">
+                  <label>Shopping Link URL (Optional)</label>
+                  <input 
+                    type="url" 
+                    className="form-input" 
+                    value={editUrl} 
+                    onChange={e => setEditUrl(e.target.value)}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Love Level / Priority</label>
+                  <select 
+                    className="form-input" 
+                    value={editPriority} 
+                    onChange={e => setEditPriority(parseInt(e.target.value))}
+                  >
+                    <option value="10">10/10 - Absolutely obsessed! 😍</option>
+                    <option value="9">9/10 - Really want this! 🔥</option>
+                    <option value="8">8/10 - Would love to have! 💖</option>
+                    <option value="7">7/10 - Want it a lot! 🥰</option>
+                    <option value="6">6/10 - Nice to have! 🙂</option>
+                    <option value="5">5/10 - Regular want! Choice</option>
+                    <option value="4">4/10 - Cute minor wish! 🌱</option>
+                    <option value="3">3/10 - If it's on sale! 🏷️</option>
+                    <option value="2">2/10 - Low priority! ☁️</option>
+                    <option value="1">1/10 - Just an idea! 💡</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label>Notes & Details</label>
+                  <textarea 
+                    className="form-input" 
+                    style={{ minHeight: '100px', resize: 'vertical' }}
+                    value={editDescription} 
+                    onChange={e => setEditDescription(e.target.value)}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+                  <button 
+                    type="submit"
+                    className="btn-primary"
+                    style={{ padding: '12px', fontSize: '0.95rem', flex: 1, justifyContent: 'center' }}
+                    disabled={loading}
+                  >
+                    {loading ? 'Saving...' : 'Save Changes'}
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => { setSelectedWishItemId(null); setIsEditing(false); }}
+                    className="btn-secondary"
+                    style={{ padding: '12px', fontSize: '0.95rem', flex: 1, justifyContent: 'center' }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         );
@@ -1159,13 +978,13 @@ const styles = {
   wishDesc: {
     fontSize: '0.88rem',
     color: 'var(--text-muted)',
-    lineHeight: '1.4',
-    margin: '10px 0',
-    display: '-webkit-box',
-    WebkitLineClamp: 3,
-    WebkitBoxOrient: 'vertical',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
+    lineHeight: '1.5',
+    margin: '12px 0',
+    whiteSpace: 'pre-wrap',
+    background: 'rgba(255, 255, 255, 0.1)',
+    padding: '10px 12px',
+    borderRadius: '12px',
+    border: '1px solid var(--border-card)',
   },
   emptyWishes: {
     display: 'flex',
