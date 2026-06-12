@@ -25,6 +25,11 @@ const ROMANTIC_QUOTES = [
   "If I had a flower for every time I thought of you... I could walk through my garden forever. — Alfred Tennyson"
 ];
 
+const isTouchDevice = () => {
+  if (typeof window === 'undefined') return false;
+  return ('ontouchstart' in window || navigator.maxTouchPoints > 0 || window.innerWidth <= 820);
+};
+
 export default function Dashboard({ user, partners, memories, events, wishlistItems, setActivePage, coupleSettings, setCoupleSettings, token, openLightbox }) {
   const [randomQuote, setRandomQuote] = useState('');
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0 });
@@ -609,7 +614,7 @@ export default function Dashboard({ user, partners, memories, events, wishlistIt
                         <div
                           key={idx}
                           className="thumbnail-container"
-                          draggable
+                          draggable={!isTouchDevice()}
                           onDragStart={() => handleDragStart(idx)}
                           onDragOver={handleDragOver}
                           onDrop={() => handleDrop(idx)}

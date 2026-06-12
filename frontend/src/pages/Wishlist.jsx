@@ -14,6 +14,11 @@ const getCurrencySymbol = (currency) => {
   }
 };
 
+const isTouchDevice = () => {
+  if (typeof window === 'undefined') return false;
+  return ('ontouchstart' in window || navigator.maxTouchPoints > 0 || window.innerWidth <= 820);
+};
+
 const formatPrice = (price, currency) => {
   if (price === null || price === undefined) return '';
   const symbol = getCurrencySymbol(currency);
@@ -927,7 +932,7 @@ export default function Wishlist({ user, partners, wishlistItems, setWishlistIte
                           <div 
                             key={img.id} 
                             className="thumbnail-container"
-                            draggable
+                            draggable={!isTouchDevice()}
                             onDragStart={() => handleEditDragStartImage(idx, true)}
                             onDragOver={handleEditDragOverImage}
                             onDrop={() => handleEditDropImage(idx, true)}
@@ -971,7 +976,7 @@ export default function Wishlist({ user, partners, wishlistItems, setWishlistIte
                         <div 
                           key={index} 
                           className="thumbnail-container"
-                          draggable
+                          draggable={!isTouchDevice()}
                           onDragStart={() => handleEditDragStartImage(index, false)}
                           onDragOver={handleEditDragOverImage}
                           onDrop={() => handleEditDropImage(index, false)}

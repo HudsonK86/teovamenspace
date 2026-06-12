@@ -2,6 +2,11 @@ import { useState, useRef } from 'react';
 import { Plus, X, Camera, Trash2, BookOpen, AlertCircle, Pencil, ChevronLeft, ChevronRight } from 'lucide-react';
 import { API_BASE_URL } from '../config.js';
 
+const isTouchDevice = () => {
+  if (typeof window === 'undefined') return false;
+  return ('ontouchstart' in window || navigator.maxTouchPoints > 0 || window.innerWidth <= 820);
+};
+
 export default function Memories({ user, partners = [], memories, setMemories, token, openLightbox }) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [title, setTitle] = useState('');
@@ -509,7 +514,7 @@ export default function Memories({ user, partners = [], memories, setMemories, t
                         <div
                           key={img.id}
                           className="thumbnail-container"
-                          draggable
+                          draggable={!isTouchDevice()}
                           onDragStart={() => handleEditDragStartImage(idx, true)}
                           onDragOver={handleEditDragOverImage}
                           onDrop={() => handleEditDropImage(idx, true)}
@@ -553,7 +558,7 @@ export default function Memories({ user, partners = [], memories, setMemories, t
                       <div
                         key={index}
                         className="thumbnail-container"
-                        draggable
+                        draggable={!isTouchDevice()}
                         onDragStart={() => handleEditDragStartImage(index, false)}
                         onDragOver={handleEditDragOverImage}
                         onDrop={() => handleEditDropImage(index, false)}
