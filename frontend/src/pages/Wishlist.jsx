@@ -31,6 +31,7 @@ const formatPrice = (price, currency) => {
 
 export default function Wishlist({ user, partners, wishlistItems, setWishlistItems, token }) {
   const [activeTab, setActiveTab] = useState('partner'); // 'partner' or 'mine'
+  const [statusFilter, setStatusFilter] = useState('all'); // 'all', 'wished', 'purchased'
   const [showAddForm, setShowAddForm] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -243,11 +244,33 @@ export default function Wishlist({ user, partners, wishlistItems, setWishlistIte
     }
   };
 
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setStatusFilter('all');
+  };
+
+  const getFilterBtnStyle = (status) => {
+    const isActive = statusFilter === status;
+    return {
+      ...styles.filterBtn,
+      ...(isActive ? {
+        color: 'white',
+        background: activeTab === 'partner' ? 'var(--secondary)' : 'var(--primary)',
+        borderColor: activeTab === 'partner' ? 'var(--secondary)' : 'var(--primary)',
+        boxShadow: activeTab === 'partner' ? '0 2px 8px rgba(176, 136, 255, 0.15)' : '0 2px 8px rgba(253, 114, 150, 0.15)',
+      } : {})
+    };
+  };
+
   // Filter items
   const partnerWishes = wishlistItems.filter(item => item.ownerId === partner?.id);
   const myWishes = wishlistItems.filter(item => item.ownerId === user?.id);
 
-  const displayedWishes = activeTab === 'partner' ? partnerWishes : myWishes;
+  const displayedWishes = (activeTab === 'partner' ? partnerWishes : myWishes).filter(item => {
+    if (statusFilter === 'wished') return !item.isPurchased;
+    if (statusFilter === 'purchased') return item.isPurchased;
+    return true; // 'all'
+  });
 
   return (
     <div>
@@ -265,18 +288,40 @@ export default function Wishlist({ user, partners, wishlistItems, setWishlistIte
       {/* Tabs */}
       <div style={styles.tabsContainer}>
         <button 
-          onClick={() => setActiveTab('partner')}
+          onClick={() => handleTabChange('partner')}
           style={{...styles.tabBtn, ...(activeTab === 'partner' ? styles.activeTabBtn : {}), borderColor: 'var(--secondary)'}}
         >
           <Gift size={18} />
           <span>{partner ? `${partner.name}'s Wishlist` : "Partner's Wishlist"}</span>
         </button>
         <button 
-          onClick={() => setActiveTab('mine')}
+          onClick={() => handleTabChange('mine')}
           style={{...styles.tabBtn, ...(activeTab === 'mine' ? styles.activeTabBtn : {})}}
         >
           <Heart size={18} />
           <span>My Wishlist</span>
+        </button>
+      </div>
+
+      {/* Status Filters */}
+      <div style={styles.statusFiltersContainer}>
+        <button 
+          onClick={() => setStatusFilter('all')}
+          style={getFilterBtnStyle('all')}
+        >
+          All
+        </button>
+        <button 
+          onClick={() => setStatusFilter('wished')}
+          style={getFilterBtnStyle('wished')}
+        >
+          Wished
+        </button>
+        <button 
+          onClick={() => setStatusFilter('purchased')}
+          style={getFilterBtnStyle('purchased')}
+        >
+          Purchased
         </button>
       </div>
 
@@ -1006,6 +1051,23 @@ const styles = {
     display: 'flex',
     gap: '12px',
     marginBottom: '24px',
+  },
+  statusFiltersContainer: {
+    display: 'flex',
+    gap: '8px',
+    marginBottom: '24px',
+    flexWrap: 'wrap',
+  },
+  filterBtn: {
+    background: 'var(--card-bg)',
+    border: '1px solid var(--border-card)',
+    padding: '6px 16px',
+    borderRadius: '20px',
+    cursor: 'pointer',
+    fontWeight: '600',
+    fontSize: '0.85rem',
+    color: 'var(--text-muted)',
+    transition: 'var(--transition-smooth)',
   },
   tabBtn: {
     display: 'flex',
