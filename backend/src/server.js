@@ -6,6 +6,7 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import rateLimit from 'express-rate-limit';
+import multer from 'multer';
 
 // Load environment variables
 dotenv.config();
@@ -138,6 +139,25 @@ app.get('/health', (req, res) => {
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error('Unhandled Error:', err.stack || err);
+
+  // Handle Multer limit and configuration errors specifically
+  if (err instanceof multer.MulterError || err.name === 'MulterError' || err.code?.startsWith('LIMIT_')) {
+    let friendlyMessage = err.message;
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      friendlyMessage = 'One of the uploaded files is too large. Each file is limited to 50MB.';
+    } else if (err.code === 'LIMIT_FILE_COUNT') {
+      friendlyMessage = 'Too many files uploaded at once. You can upload a maximum of 10 files.';
+    } else if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+      friendlyMessage = 'Unexpected file field. Please upload using the correct file input.';
+    }
+    return res.status(400).json({ error: friendlyMessage });
+  }
+
+  // Handle invalid/traversal paths specifically
+  if (err.message && err.message.includes('Path traversal detected')) {
+    return res.status(400).json({ error: 'Invalid file path: Path traversal detected.' });
+  }
+
   res.status(err.status || 500).json({
     error: err.message || 'Internal Server Error'
   });
