@@ -89,8 +89,8 @@ app.use(helmet({
 }));
 
 // Body parsing middleware with size limits
-app.use(express.json({ limit: '10kb' }));
-app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Setup static file serving for local upload fallbacks
 const __filename = fileURLToPath(import.meta.url);
