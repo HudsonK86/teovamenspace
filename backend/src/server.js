@@ -148,7 +148,7 @@ app.use((err, req, res, next) => {
     } else if (err.code === 'LIMIT_FILE_COUNT') {
       friendlyMessage = 'Too many files uploaded at once. You can upload a maximum of 10 files.';
     } else if (err.code === 'LIMIT_UNEXPECTED_FILE') {
-      friendlyMessage = 'Unexpected file field. Please upload using the correct file input.';
+      friendlyMessage = `Unexpected file field: "${err.field || 'unknown'}". Please upload using the correct file input.`;
     }
     return res.status(400).json({ error: friendlyMessage });
   }
