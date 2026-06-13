@@ -198,14 +198,6 @@ export default function Diary({ user, partners = [], diaries, setDiaries, token 
             </p>
           </div>
         </div>
-        <button 
-          onClick={() => { setError(''); setShowAddModal(true); }} 
-          className="btn-primary"
-          style={{ padding: '10px 20px', gap: '8px' }}
-        >
-          <Plus size={16} />
-          <span>Write Entry</span>
-        </button>
       </div>
 
       {/* Search & Filters */}
@@ -244,6 +236,21 @@ export default function Diary({ user, partners = [], diaries, setDiaries, token 
               {partner.name}'s Logs
             </button>
           )}
+        </div>
+      </div>
+
+      {/* Facebook-style Composer Box */}
+      <div 
+        className="glass-panel facebook-composer" 
+        onClick={() => { setError(''); setShowAddModal(true); }}
+      >
+        <img 
+          src={user?.avatar ? (user.avatar.startsWith('/uploads/') ? `${API_BASE_URL}${user.avatar}` : user.avatar) : 'https://api.dicebear.com/7.x/adventurer/svg?seed=User'} 
+          alt={user?.name || 'User'}
+          style={styles.composerAvatar}
+        />
+        <div className="composer-placeholder-inner">
+          What's on ur mind, {user?.name ? user.name.split(' ')[0] : 'dear'}?...
         </div>
       </div>
 
@@ -601,5 +608,12 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     gap: '8px',
+  },
+  composerAvatar: {
+    width: '40px',
+    height: '40px',
+    borderRadius: '50%',
+    objectFit: 'cover',
+    border: '2px solid var(--primary-light)',
   },
 };
