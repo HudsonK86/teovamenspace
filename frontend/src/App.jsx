@@ -6,6 +6,7 @@ import Memories from './pages/Memories.jsx';
 import Preferences from './pages/Preferences.jsx';
 import Events from './pages/Events.jsx';
 import Wishlist from './pages/Wishlist.jsx';
+import Diary from './pages/Diary.jsx';
 import { API_BASE_URL } from './config.js';
 import { Heart, CloudLightning, X } from 'lucide-react';
 import './App.css';
@@ -20,6 +21,7 @@ export default function App() {
   const [preferences, setPreferences] = useState([]);
   const [events, setEvents] = useState([]);
   const [wishlistItems, setWishlistItems] = useState([]);
+  const [diaries, setDiaries] = useState([]);
   const [coupleSettings, setCoupleSettings] = useState(null);
   
   // Navigation & UI States
@@ -109,13 +111,14 @@ export default function App() {
       setUser(meData);
 
       // Parallel data fetching
-      const [partnersRes, memoriesRes, preferencesRes, eventsRes, wishlistRes, coupleRes] = await Promise.all([
+      const [partnersRes, memoriesRes, preferencesRes, eventsRes, wishlistRes, coupleRes, diaryRes] = await Promise.all([
         fetch(`${API_BASE_URL}/api/auth/partners`, { headers }),
         fetch(`${API_BASE_URL}/api/memories`, { headers }),
         fetch(`${API_BASE_URL}/api/preferences`, { headers }),
         fetch(`${API_BASE_URL}/api/events`, { headers }),
         fetch(`${API_BASE_URL}/api/wishlist`, { headers }),
         fetch(`${API_BASE_URL}/api/couple`, { headers }),
+        fetch(`${API_BASE_URL}/api/diary`, { headers }),
       ]);
 
       if (partnersRes.ok) setPartners(await partnersRes.json());
@@ -124,6 +127,7 @@ export default function App() {
       if (eventsRes.ok) setEvents(await eventsRes.json());
       if (wishlistRes.ok) setWishlistItems(await wishlistRes.json());
       if (coupleRes.ok) setCoupleSettings(await coupleRes.json());
+      if (diaryRes.ok) setDiaries(await diaryRes.json());
 
     } catch (err) {
       console.error('Data loading error:', err);
@@ -155,6 +159,7 @@ export default function App() {
     setPreferences([]);
     setEvents([]);
     setWishlistItems([]);
+    setDiaries([]);
     setCoupleSettings(null);
     setActivePage('dashboard');
   };
@@ -262,6 +267,16 @@ export default function App() {
             setWishlistItems={setWishlistItems} 
             token={token} 
             openLightbox={openLightbox}
+          />
+        );
+      case 'diary':
+        return (
+          <Diary 
+            user={user} 
+            partners={partners} 
+            diaries={diaries} 
+            setDiaries={setDiaries} 
+            token={token} 
           />
         );
       default:

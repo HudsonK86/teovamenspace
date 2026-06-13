@@ -21,6 +21,17 @@ model User {
   wishlist       WishlistItem[] @relation("UserWishlist")
   boughtGifts    WishlistItem[] @relation("BoughtGifts")
   assignedTasks  ChecklistItem[]
+  diaryEntries   Diary[]        @relation("UserDiaries")
+}
+
+model Diary {
+  id          String   @id @default(uuid())
+  title       String
+  content     String   @db.Text
+  date        DateTime
+  authorId    String
+  author      User     @relation("UserDiaries", fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
 }
 
 model Memory {

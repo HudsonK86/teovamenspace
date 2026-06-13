@@ -1,5 +1,5 @@
 import React from 'react';
-import { Heart, BookOpen, UserCheck, Calendar, Gift, LogOut, Sun, Moon } from 'lucide-react';
+import { Heart, BookOpen, UserCheck, Calendar, Gift, LogOut, Sun, Moon, Notebook } from 'lucide-react';
 import { API_BASE_URL } from '../config.js';
 
 export default function Navbar({ activePage, setActivePage, user, partners, logout, theme, toggleTheme }) {
@@ -33,6 +33,15 @@ export default function Navbar({ activePage, setActivePage, user, partners, logo
           >
             <BookOpen size={18} className="nav-link-icon" />
             <span className="nav-link-label">Memories</span>
+          </button>
+
+          <button 
+            onClick={() => setActivePage('diary')} 
+            className={`nav-link ${activePage === 'diary' ? 'active' : ''}`}
+            title="Diary"
+          >
+            <Notebook size={18} className="nav-link-icon" />
+            <span className="nav-link-label">Diary</span>
           </button>
           
           <button 

@@ -18,6 +18,7 @@ import memoriesRouter from './routes/memories.js';
 import eventsRouter from './routes/events.js';
 import wishlistRouter from './routes/wishlist.js';
 import coupleRouter from './routes/couple.js';
+import diaryRouter from './routes/diary.js';
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -113,6 +114,7 @@ app.use('/api/memories', memoriesRouter);
 app.use('/api/events', eventsRouter);
 app.use('/api/wishlist', wishlistRouter);
 app.use('/api/couple', coupleRouter);
+app.use('/api/diary', diaryRouter);
 
 // Debug route to log frontend errors (restricted to localhost in production)
 app.post('/api/debug/log', (req, res) => {
