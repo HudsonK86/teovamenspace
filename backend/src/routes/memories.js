@@ -109,7 +109,7 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // POST a new memory (with optional multiple image uploads)
-router.post('/', authenticateToken, upload.array('images', 10), async (req, res) => {
+router.post('/', authenticateToken, upload.array('images', 50), async (req, res) => {
   const { title, description, date } = req.body;
   const authorId = req.user.id;
 
@@ -155,7 +155,7 @@ router.post('/', authenticateToken, upload.array('images', 10), async (req, res)
 });
 
 // PUT/edit a memory
-router.put('/:id', authenticateToken, upload.array('images', 10), async (req, res) => {
+router.put('/:id', authenticateToken, upload.array('images', 50), async (req, res) => {
   const { id } = req.params;
   const { title, description, date } = req.body;
   const userId = req.user.id;
