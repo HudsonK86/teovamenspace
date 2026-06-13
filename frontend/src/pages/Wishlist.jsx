@@ -51,8 +51,10 @@ const getPriorityLabel = (priority) => {
   }
 };
 
-export default function Wishlist({ user, partners, wishlistItems, setWishlistItems, token, openLightbox }) {
-  const [activeTab, setActiveTab] = useState('partner'); // 'partner' or 'mine'
+export default function Wishlist({ user, partners, wishlistItems, setWishlistItems, token, openLightbox, activeTab: propActiveTab, setActiveTab: propSetActiveTab }) {
+  const [localActiveTab, setLocalActiveTab] = useState('partner');
+  const activeTab = propActiveTab || localActiveTab;
+  const setActiveTab = propSetActiveTab || setLocalActiveTab;
   const [statusFilter, setStatusFilter] = useState('all'); // 'all', 'wished', 'purchased'
   const [showAddForm, setShowAddForm] = useState(false);
   const [title, setTitle] = useState('');

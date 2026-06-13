@@ -30,7 +30,7 @@ const isTouchDevice = () => {
   return ('ontouchstart' in window || navigator.maxTouchPoints > 0 || window.innerWidth <= 820);
 };
 
-export default function Dashboard({ user, partners, memories, events, wishlistItems, diaries = [], setActivePage, coupleSettings, setCoupleSettings, token, openLightbox }) {
+export default function Dashboard({ user, partners, memories, events, wishlistItems, diaries = [], setActivePage, setWishlistActiveTab, coupleSettings, setCoupleSettings, token, openLightbox }) {
   const [randomQuote, setRandomQuote] = useState('');
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0 });
   const [nextEvent, setNextEvent] = useState(null);
@@ -269,8 +269,8 @@ export default function Dashboard({ user, partners, memories, events, wishlistIt
 
   // Statistics calculation
   const totalMemories = memories.length;
+  const totalDiaries = diaries.length;
   const partnerWishes = wishlistItems.filter(item => item.ownerId === partner?.id && !item.isPurchased).length;
-  const myWishes = wishlistItems.filter(item => item.ownerId === user?.id).length;
   
   // Calculate uncompleted tasks assigned to me
   const uncompletedTasks = events.reduce((acc, event) => {
@@ -603,14 +603,14 @@ export default function Dashboard({ user, partners, memories, events, wishlistIt
             <div className="glass-panel" style={styles.statBox} onClick={() => setActivePage('memories')}>
               <BookOpen size={24} color="var(--primary)" style={{ marginBottom: '8px' }} />
               <span style={styles.statVal}>{totalMemories}</span>
-              <span style={styles.statLabel}>Journal Pages</span>
+              <span style={styles.statLabel}>Memories</span>
             </div>
 
-            {/* Stat 2: Wishlist */}
-            <div className="glass-panel" style={styles.statBox} onClick={() => setActivePage('wishlist')}>
-              <Gift size={24} color="var(--secondary)" style={{ marginBottom: '8px' }} />
-              <span style={styles.statVal}>{partnerWishes}</span>
-              <span style={styles.statLabel}>Surprises to Buy</span>
+            {/* Stat 2: Diaries */}
+            <div className="glass-panel" style={styles.statBox} onClick={() => setActivePage('diary')}>
+              <Notebook size={24} color="var(--primary)" style={{ marginBottom: '8px' }} />
+              <span style={styles.statVal}>{totalDiaries}</span>
+              <span style={styles.statLabel}>Diaries</span>
             </div>
 
             {/* Stat 3: Tasks */}
@@ -620,11 +620,14 @@ export default function Dashboard({ user, partners, memories, events, wishlistIt
               <span style={styles.statLabel}>Tasks for You</span>
             </div>
 
-            {/* Stat 4: Wishlist items owned by user */}
-            <div className="glass-panel" style={styles.statBox} onClick={() => setActivePage('wishlist')}>
-              <Heart size={24} color="var(--primary)" style={{ marginBottom: '8px' }} />
-              <span style={styles.statVal}>{myWishes}</span>
-              <span style={styles.statLabel}>Your Wishes</span>
+            {/* Stat 4: Surprises to Buy */}
+            <div className="glass-panel" style={styles.statBox} onClick={() => {
+              if (setWishlistActiveTab) setWishlistActiveTab('partner');
+              setActivePage('wishlist');
+            }}>
+              <Gift size={24} color="var(--secondary)" style={{ marginBottom: '8px' }} />
+              <span style={styles.statVal}>{partnerWishes}</span>
+              <span style={styles.statLabel}>Surprises to Buy</span>
             </div>
           </div>
         </div>

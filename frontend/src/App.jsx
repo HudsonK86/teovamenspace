@@ -26,6 +26,7 @@ export default function App() {
   
   // Navigation & UI States
   const [activePage, setActivePage] = useState('dashboard');
+  const [wishlistActiveTab, setWishlistActiveTab] = useState('partner');
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
   const [loading, setLoading] = useState(!!localStorage.getItem('token'));
   const [serverOffline, setServerOffline] = useState(false);
@@ -220,6 +221,7 @@ export default function App() {
             wishlistItems={wishlistItems} 
             diaries={diaries}
             setActivePage={setActivePage}
+            setWishlistActiveTab={setWishlistActiveTab}
             coupleSettings={coupleSettings}
             setCoupleSettings={setCoupleSettings}
             token={token}
@@ -268,6 +270,8 @@ export default function App() {
             setWishlistItems={setWishlistItems} 
             token={token} 
             openLightbox={openLightbox}
+            activeTab={wishlistActiveTab}
+            setActiveTab={setWishlistActiveTab}
           />
         );
       case 'diary':
