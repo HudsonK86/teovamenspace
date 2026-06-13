@@ -11,8 +11,9 @@ const router = Router();
 
 // Helper: Sanitize and validate file path to prevent path traversal
 function sanitizePath(baseDir, userPath) {
+  const relativePath = userPath.startsWith('/') ? userPath.slice(1) : userPath;
   const resolvedBase = path.resolve(baseDir);
-  const resolvedPath = path.resolve(baseDir, userPath);
+  const resolvedPath = path.resolve(resolvedBase, relativePath);
   
   if (!resolvedPath.startsWith(resolvedBase)) {
     throw new Error('Invalid file path: Path traversal detected');

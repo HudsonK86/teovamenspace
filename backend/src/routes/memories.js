@@ -11,8 +11,9 @@ const router = Router();
 
 // Helper: Sanitize and validate file path to prevent path traversal
 function sanitizePath(baseDir, userPath) {
+  const relativePath = userPath.startsWith('/') ? userPath.slice(1) : userPath;
   const resolvedBase = path.resolve(baseDir);
-  const resolvedPath = path.resolve(baseDir, userPath);
+  const resolvedPath = path.resolve(resolvedBase, relativePath);
   
   if (!resolvedPath.startsWith(resolvedBase)) {
     throw new Error('Invalid file path: Path traversal detected');
@@ -173,17 +174,45 @@ router.put('/:id', authenticateToken, upload.array('images', 10), async (req, re
       return res.status(404).json({ error: 'Memory not found' });
     }
 
-    // Parse existingImageIds that the client wants to keep
+    // Parse existingImageIds that the client wants to keep (robust implementation)
     let existingImageIds = null;
-    if (req.body.existingImageIds !== undefined) {
-      try {
-        existingImageIds = JSON.parse(req.body.existingImageIds);
-      } catch (e) {
-        if (Array.isArray(req.body.existingImageIds)) {
-          existingImageIds = req.body.existingImageIds;
+    if (req.body.existingImageIds !== undefined && req.body.existingImageIds !== null) {
+      const rawValue = req.body.existingImageIds;
+      if (Array.isArray(rawValue)) {
+        existingImageIds = rawValue;
+      } else if (typeof rawValue === 'string') {
+        const trimmed = rawValue.trim();
+        if (trimmed) {
+          try {
+            const parsed = JSON.parse(trimmed);
+            if (Array.isArray(parsed)) {
+              existingImageIds = parsed;
+            } else if (typeof parsed === 'string') {
+              try {
+                const doubleParsed = JSON.parse(parsed);
+                if (Array.isArray(doubleParsed)) {
+                  existingImageIds = doubleParsed;
+                } else {
+                  existingImageIds = [parsed];
+                }
+              } catch {
+                existingImageIds = [parsed];
+              }
+            } else {
+              existingImageIds = [String(parsed)];
+            }
+          } catch (e) {
+            if (trimmed.includes(',')) {
+              existingImageIds = trimmed.split(',').map(s => s.trim()).filter(Boolean);
+            } else {
+              existingImageIds = [trimmed];
+            }
+          }
         } else {
-          existingImageIds = [req.body.existingImageIds];
+          existingImageIds = [];
         }
+      } else {
+        existingImageIds = [String(rawValue)];
       }
     }
 
