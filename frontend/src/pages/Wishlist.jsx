@@ -691,22 +691,8 @@ export default function Wishlist({ user, partners, wishlistItems, setWishlistIte
                             &rsaquo;
                           </button>
 
-                          <div className="carousel-dots" style={{ bottom: '8px', padding: '4px 8px', gap: '4px' }}>
-                            {imagesList.map((_, idx) => (
-                              <div 
-                                key={idx} 
-                                className="carousel-dot"
-                                style={{
-                                  width: '6px',
-                                  height: '6px',
-                                  background: idx === activeIndex ? 'var(--primary)' : 'rgba(255, 255, 255, 0.4)'
-                                }}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setActiveIndexes(prev => ({ ...prev, [item.id]: idx }));
-                                }}
-                              />
-                            ))}
+                          <div className="carousel-counter" style={{ bottom: '8px' }}>
+                            {activeIndex + 1} / {imagesList.length}
                           </div>
                         </>
                       )}

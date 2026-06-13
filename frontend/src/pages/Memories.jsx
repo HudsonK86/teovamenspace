@@ -718,20 +718,8 @@ export default function Memories({ user, partners = [], memories, setMemories, t
                             &rsaquo;
                           </button>
 
-                          <div className="carousel-dots">
-                            {imagesList.map((_, idx) => (
-                              <div 
-                                key={idx} 
-                                className="carousel-dot"
-                                style={{
-                                  background: idx === activeIndex ? 'var(--primary)' : 'rgba(255, 255, 255, 0.4)'
-                                }}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setActiveIndexes(prev => ({ ...prev, [memory.id]: idx }));
-                                }}
-                              />
-                            ))}
+                          <div className="carousel-counter">
+                            {activeIndex + 1} / {imagesList.length}
                           </div>
                         </>
                       )}

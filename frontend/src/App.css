@@ -477,6 +477,21 @@
   backdrop-filter: blur(8px);
 }
 
+.carousel-counter {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.45);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+  backdrop-filter: blur(8px);
+  z-index: 2;
+}
+
 .carousel-dot {
   width: 8px;
   height: 8px;
