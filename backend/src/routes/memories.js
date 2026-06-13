@@ -29,7 +29,7 @@ if (!fs.existsSync(UPLOADS_DIR)) {
 const storage = multer.memoryStorage();
 const upload = multer({
   storage,
-  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
+  limits: { fileSize: 50 * 1024 * 1024, files: 200 }, // 50MB and 200 files limit
   fileFilter: (req, file, cb) => {
     const filetypes = /jpeg|jpg|png|webp|gif/;
     const mimetype = filetypes.test(file.mimetype);
@@ -109,7 +109,7 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // POST a new memory (with optional multiple image uploads)
-router.post('/', authenticateToken, upload.array('images', 50), async (req, res) => {
+router.post('/', authenticateToken, upload.array('images', 200), async (req, res) => {
   const { title, description, date } = req.body;
   const authorId = req.user.id;
 
@@ -155,7 +155,7 @@ router.post('/', authenticateToken, upload.array('images', 50), async (req, res)
 });
 
 // PUT/edit a memory
-router.put('/:id', authenticateToken, upload.array('images', 50), async (req, res) => {
+router.put('/:id', authenticateToken, upload.array('images', 200), async (req, res) => {
   const { id } = req.params;
   const { title, description, date } = req.body;
   const userId = req.user.id;

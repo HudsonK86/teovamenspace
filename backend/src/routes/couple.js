@@ -31,7 +31,7 @@ if (!fs.existsSync(UPLOADS_DIR)) {
 const storage = multer.memoryStorage();
 const upload = multer({
   storage,
-  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
+  limits: { fileSize: 50 * 1024 * 1024, files: 200 }, // 50MB and 200 files limit
   fileFilter: (req, file, cb) => {
     const filetypes = /jpeg|jpg|png|webp|gif/;
     const mimetype = filetypes.test(file.mimetype);
@@ -187,7 +187,7 @@ router.put('/', authenticateToken, async (req, res) => {
 });
 
 // POST upload couple pictures (supports multiple files)
-router.post('/pictures', authenticateToken, upload.any(), async (req, res) => {
+router.post('/pictures', authenticateToken, upload.array('images', 200), async (req, res) => {
   if (!req.files || req.files.length === 0) {
     return res.status(400).json({ error: 'No image files uploaded' });
   }

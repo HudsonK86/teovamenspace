@@ -13,7 +13,7 @@ const router = Router();
 const storage = multer.memoryStorage();
 const upload = multer({
   storage,
-  limits: { fileSize: 50 * 1024 * 1024 },
+  limits: { fileSize: 50 * 1024 * 1024, files: 200 },
   fileFilter: (req, file, cb) => {
     const filetypes = /jpeg|jpg|png|webp|gif/;
     const mimetype = filetypes.test(file.mimetype);
@@ -97,7 +97,7 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // POST a new wishlist item (with optional multiple image uploads)
-router.post('/', authenticateToken, upload.array('images', 50), async (req, res) => {
+router.post('/', authenticateToken, upload.array('images', 200), async (req, res) => {
   const { title, description, price, url, currency, priority } = req.body;
   const ownerId = req.user.id;
 
@@ -148,7 +148,7 @@ router.post('/', authenticateToken, upload.array('images', 50), async (req, res)
 });
 
 // PATCH a wishlist item (e.g. mark as purchased or edit details)
-router.patch('/:id', authenticateToken, upload.array('images', 50), async (req, res) => {
+router.patch('/:id', authenticateToken, upload.array('images', 200), async (req, res) => {
   const { id } = req.params;
   const { isPurchased, title, description, price, url, currency, priority } = req.body;
   const userId = req.user.id;
