@@ -41,6 +41,18 @@
   transition: var(--transition-smooth);
 }
 
+/* Fix for iOS Safari native date and datetime inputs formatting and layout alignment */
+.form-input[type="date"],
+.form-input[type="time"],
+.form-input[type="datetime-local"] {
+  -webkit-appearance: none;
+  appearance: none;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
 [data-theme="dark"] .form-input, 
 [data-theme="dark"] .form-textarea, 
 [data-theme="dark"] .form-select {
