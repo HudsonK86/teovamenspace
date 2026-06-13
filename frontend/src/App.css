@@ -1395,4 +1395,18 @@
   border-color: rgba(253, 114, 150, 0.3) !important;
 }
 
+/* Ensure exactly 2 lines clamping for diaries teaser content */
+.diary-teaser-content {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin: 0;
+  white-space: normal;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
 

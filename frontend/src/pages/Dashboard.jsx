@@ -283,8 +283,8 @@ export default function Dashboard({ user, partners, memories, events, wishlistIt
     .filter(m => m.imageUrl)
     .slice(0, 3);
 
-  // Get 3 recent diaries
-  const recentDiaries = diaries.slice(0, 3);
+  // Get 2 recent diaries
+  const recentDiaries = diaries.slice(0, 2);
 
   return (
     <div style={styles.container}>
@@ -514,16 +514,18 @@ export default function Dashboard({ user, partners, memories, events, wishlistIt
                       <div style={styles.diaryTeaserHeader}>
                         <h4 style={styles.diaryTeaserTitle}>{diary.title}</h4>
                         <span style={styles.diaryTeaserDate}>
-                          {new Date(diary.date).toLocaleDateString(undefined, { 
+                          {new Date(diary.date).toLocaleString(undefined, { 
+                            timeZone: 'Asia/Ho_Chi_Minh',
                             month: 'short', 
-                            day: 'numeric' 
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            hour12: false
                           })}
                         </span>
                       </div>
-                      <p style={styles.diaryTeaserContent}>
-                        {diary.content.length > 120 
-                          ? `${diary.content.substring(0, 120)}...` 
-                          : diary.content}
+                      <p className="diary-teaser-content" style={styles.diaryTeaserContent}>
+                        {diary.content}
                       </p>
                       {author && (
                         <div style={styles.diaryTeaserAuthor}>
