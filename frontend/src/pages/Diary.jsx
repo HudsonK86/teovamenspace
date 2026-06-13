@@ -2,6 +2,47 @@ import React, { useState, useRef } from 'react';
 import { Notebook, Plus, X, Search, Calendar, Edit3, Trash2, Heart, AlignLeft, AlertCircle } from 'lucide-react';
 import { API_BASE_URL } from '../config.js';
 
+// Helpers for Vietnam Timezone (UTC+7)
+const getVietnameseTimeString = () => {
+  const now = new Date();
+  const options = {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  };
+  const formatter = new Intl.DateTimeFormat('sv-SE', options);
+  return formatter.format(now).replace(' ', 'T');
+};
+
+const parseVNInputToUTC = (inputStr) => {
+  if (!inputStr) return new Date().toISOString();
+  const [datePart, timePart] = inputStr.split('T');
+  const [year, month, day] = datePart.split('-').map(Number);
+  const [hours, minutes] = timePart.split(':').map(Number);
+  const utcTime = Date.UTC(year, month - 1, day, hours, minutes);
+  return new Date(utcTime - 7 * 60 * 60 * 1000).toISOString();
+};
+
+const formatToVNInputString = (dateInput) => {
+  if (!dateInput) return '';
+  const dateObj = new Date(dateInput);
+  const options = {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  };
+  const formatter = new Intl.DateTimeFormat('sv-SE', options);
+  return formatter.format(dateObj).replace(' ', 'T');
+};
+
 export default function Diary({ user, partners = [], diaries, setDiaries, token }) {
   // UI States
   const [showAddModal, setShowAddModal] = useState(false);
@@ -12,7 +53,7 @@ export default function Diary({ user, partners = [], diaries, setDiaries, token 
   // Form States (Add)
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(getVietnameseTimeString());
   
   // Form States (Edit)
   const [editTitle, setEditTitle] = useState('');
@@ -42,7 +83,7 @@ export default function Diary({ user, partners = [], diaries, setDiaries, token 
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ title, content, date }),
+        body: JSON.stringify({ title, content, date: parseVNInputToUTC(date) }),
       });
 
       const data = await res.json();
@@ -54,7 +95,7 @@ export default function Diary({ user, partners = [], diaries, setDiaries, token 
       // Reset form
       setTitle('');
       setContent('');
-      setDate(new Date().toISOString().split('T')[0]);
+      setDate(getVietnameseTimeString());
     } catch (err) {
       setError(err.message);
     } finally {
@@ -67,9 +108,8 @@ export default function Diary({ user, partners = [], diaries, setDiaries, token 
     setEditTitle(entry.title);
     setEditContent(entry.content);
     
-    // Format date safely
-    const formattedDate = new Date(entry.date).toISOString().split('T')[0];
-    setEditDate(formattedDate);
+    // Format date safely to Vietnam Time Input format
+    setEditDate(formatToVNInputString(entry.date));
     setError('');
   };
 
@@ -90,7 +130,7 @@ export default function Diary({ user, partners = [], diaries, setDiaries, token 
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ title: editTitle, content: editContent, date: editDate }),
+        body: JSON.stringify({ title: editTitle, content: editContent, date: parseVNInputToUTC(editDate) }),
       });
 
       const data = await res.json();
@@ -219,10 +259,14 @@ export default function Diary({ user, partners = [], diaries, setDiaries, token 
               <div key={entry.id} className="timeline-item">
                 <div className="timeline-dot"></div>
                 <div className="timeline-date">
-                  {new Date(entry.date).toLocaleDateString(undefined, { 
+                  {new Date(entry.date).toLocaleString(undefined, { 
+                    timeZone: 'Asia/Ho_Chi_Minh',
                     year: 'numeric', 
                     month: 'long', 
-                    day: 'numeric' 
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
                   })}
                 </div>
                 
@@ -315,9 +359,9 @@ export default function Diary({ user, partners = [], diaries, setDiaries, token 
               </div>
 
               <div className="form-group">
-                <label>Date</label>
+                <label>Date & Time (Vietnam Time)</label>
                 <input 
-                  type="date" 
+                  type="datetime-local" 
                   className="form-input" 
                   value={date} 
                   onChange={e => setDate(e.target.value)}
@@ -377,9 +421,9 @@ export default function Diary({ user, partners = [], diaries, setDiaries, token 
               </div>
 
               <div className="form-group">
-                <label>Date</label>
+                <label>Date & Time (Vietnam Time)</label>
                 <input 
-                  type="date" 
+                  type="datetime-local" 
                   className="form-input" 
                   value={editDate} 
                   onChange={e => setEditDate(e.target.value)}
