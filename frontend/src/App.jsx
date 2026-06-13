@@ -218,6 +218,7 @@ export default function App() {
             memories={memories} 
             events={events} 
             wishlistItems={wishlistItems} 
+            diaries={diaries}
             setActivePage={setActivePage}
             coupleSettings={coupleSettings}
             setCoupleSettings={setCoupleSettings}

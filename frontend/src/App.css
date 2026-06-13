@@ -1374,4 +1374,25 @@
   border-color: rgba(253, 114, 150, 0.4);
 }
 
+/* Diary teaser card hover & themes */
+.diary-teaser-card {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.diary-teaser-card:hover {
+  background: rgba(255, 255, 255, 0.75) !important;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover);
+}
+
+[data-theme="dark"] .diary-teaser-card {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: var(--border-card) !important;
+}
+
+[data-theme="dark"] .diary-teaser-card:hover {
+  background: rgba(255, 255, 255, 0.09) !important;
+  border-color: rgba(253, 114, 150, 0.3) !important;
+}
+
 

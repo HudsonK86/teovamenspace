@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Heart, Sparkles, BookOpen, Gift, Calendar, CheckSquare, MessageCircleHeart, Plus, Trash2, Edit3, Save, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Heart, Sparkles, BookOpen, Gift, Calendar, CheckSquare, MessageCircleHeart, Plus, Trash2, Edit3, Save, X, ChevronLeft, ChevronRight, Notebook } from 'lucide-react';
 import { API_BASE_URL } from '../config.js';
 
 const ROMANTIC_QUOTES = [
@@ -30,7 +30,7 @@ const isTouchDevice = () => {
   return ('ontouchstart' in window || navigator.maxTouchPoints > 0 || window.innerWidth <= 820);
 };
 
-export default function Dashboard({ user, partners, memories, events, wishlistItems, setActivePage, coupleSettings, setCoupleSettings, token, openLightbox }) {
+export default function Dashboard({ user, partners, memories, events, wishlistItems, diaries = [], setActivePage, coupleSettings, setCoupleSettings, token, openLightbox }) {
   const [randomQuote, setRandomQuote] = useState('');
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0 });
   const [nextEvent, setNextEvent] = useState(null);
@@ -283,6 +283,9 @@ export default function Dashboard({ user, partners, memories, events, wishlistIt
     .filter(m => m.imageUrl)
     .slice(0, 3);
 
+  // Get 3 recent diaries
+  const recentDiaries = diaries.slice(0, 3);
+
   return (
     <div style={styles.container}>
       {/* Welcome Banner - Spans Full Width */}
@@ -480,6 +483,65 @@ export default function Dashboard({ user, partners, memories, events, wishlistIt
             ) : (
               <div style={styles.emptyTeaser} onClick={() => setActivePage('memories')}>
                 <p>No photos posted yet. Tap here to capture your first memory together! 📸</p>
+              </div>
+            )}
+          </div>
+
+          {/* Recent Diaries Teaser */}
+          <div className="glass-panel" style={styles.recentDiariesWidget}>
+            <div style={styles.sectionHeader}>
+              <h3 style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <Notebook size={20} color="var(--primary)" />
+                Recent Diaries
+              </h3>
+              <button onClick={() => setActivePage('diary')} style={styles.seeAllBtn}>View Diary</button>
+            </div>
+            
+            {recentDiaries.length > 0 ? (
+              <div style={styles.diariesTeaserGrid}>
+                {recentDiaries.map(diary => {
+                  const author = (user && user.id === diary.authorId)
+                    ? user
+                    : (partners.find(p => p.id === diary.authorId) || diary.author);
+                  
+                  return (
+                    <div 
+                      key={diary.id} 
+                      className="glass-panel diary-teaser-card"
+                      style={styles.diaryTeaserCard}
+                      onClick={() => setActivePage('diary')}
+                    >
+                      <div style={styles.diaryTeaserHeader}>
+                        <h4 style={styles.diaryTeaserTitle}>{diary.title}</h4>
+                        <span style={styles.diaryTeaserDate}>
+                          {new Date(diary.date).toLocaleDateString(undefined, { 
+                            month: 'short', 
+                            day: 'numeric' 
+                          })}
+                        </span>
+                      </div>
+                      <p style={styles.diaryTeaserContent}>
+                        {diary.content.length > 120 
+                          ? `${diary.content.substring(0, 120)}...` 
+                          : diary.content}
+                      </p>
+                      {author && (
+                        <div style={styles.diaryTeaserAuthor}>
+                          <img 
+                            src={author.avatar ? (author.avatar.startsWith('/uploads/') ? `${API_BASE_URL}${author.avatar}` : author.avatar) : 'https://api.dicebear.com/7.x/adventurer/svg?seed=User'} 
+                            alt={author.name}
+                            style={styles.diaryTeaserAvatar}
+                          />
+                          <span style={styles.diaryTeaserAuthorName}>{author.name}</span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div style={styles.emptyTeaser} onClick={() => setActivePage('diary')}>
+                <p>No diary entries written yet. Tap here to write down your first thoughts! ✍️</p>
               </div>
             )}
           </div>
@@ -716,6 +778,76 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     gap: '24px',
+  },
+  recentDiariesWidget: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '16px',
+    marginTop: '24px',
+  },
+  diariesTeaserGrid: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '12px',
+  },
+  diaryTeaserCard: {
+    padding: '16px',
+    cursor: 'pointer',
+    background: 'rgba(255, 255, 255, 0.45)',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px',
+  },
+  diaryTeaserHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: '10px',
+  },
+  diaryTeaserTitle: {
+    fontSize: '0.95rem',
+    fontWeight: '700',
+    color: 'var(--text-main)',
+    margin: 0,
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+  },
+  diaryTeaserDate: {
+    fontSize: '0.75rem',
+    fontWeight: '600',
+    color: 'var(--text-muted)',
+    whiteSpace: 'nowrap',
+  },
+  diaryTeaserContent: {
+    fontSize: '0.85rem',
+    color: 'var(--text-muted)',
+    lineHeight: '1.5',
+    margin: 0,
+    whiteSpace: 'normal',
+    display: '-webkit-box',
+    WebkitLineClamp: 2,
+    WebkitBoxOrient: 'vertical',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+  },
+  diaryTeaserAuthor: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    marginTop: '4px',
+  },
+  diaryTeaserAvatar: {
+    width: '18px',
+    height: '18px',
+    borderRadius: '50%',
+    objectFit: 'cover',
+    border: '1px solid var(--primary-light)',
+  },
+  diaryTeaserAuthorName: {
+    fontSize: '0.75rem',
+    fontWeight: '600',
+    color: 'var(--text-muted)',
   },
   rightCol: {
     display: 'flex',
